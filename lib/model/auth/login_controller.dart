@@ -1,10 +1,8 @@
 // lib/modules/auth/login_controller.dart
 import 'package:flutter/material.dart';
-
-// Simulating a registered user database (for demonstration only)
-final Map<String, String> mockUserDatabase = {
-  'test@example.com': 'password123',
-};
+import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/auth_api_service.dart';
 
 class LoginController {
   final TextEditingController emailController = TextEditingController();
@@ -23,20 +21,30 @@ class LoginController {
       showMessage(context, 'Please fill in all fields');
       return false;
     }
-
     return true;
   }
 
-  void login(BuildContext context) {
+  Future<void> login(BuildContext context) async {
     if (validateInputs(context)) {
       final email = emailController.text.trim();
       final password = passwordController.text;
-
-      if (mockUserDatabase.containsKey(email) &&
-          mockUserDatabase[email] == password) {
-        Navigator.pushNamed(context, '/dashboard');
-      } else {
-        showMessage(context, 'Invalid email or password');
+      final authApi = GetIt.instance<AuthApiService>();
+      try {
+        final result = await authApi.login(email, password);
+        final token = result['token'];
+        if (token != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwt_token', token);
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          showMessage(context, result['message'] ?? 'Login failed. Please check your credentials.');
+        }
+      } catch (e) {
+        String errorMsg = 'Login failed. Please try again.';
+        if (e is Exception && e.toString().contains('SocketException')) {
+          errorMsg = 'Network error. Please check your connection.';
+        }
+        showMessage(context, errorMsg);
       }
     }
   }

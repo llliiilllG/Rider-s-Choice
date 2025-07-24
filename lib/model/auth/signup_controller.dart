@@ -1,6 +1,7 @@
 // lib/modules/auth/signup_controller.dart
 import 'package:flutter/material.dart';
-import 'login_controller.dart'; // to access the mockUserDatabase
+import 'package:get_it/get_it.dart';
+import '../../core/services/auth_api_service.dart';
 
 class SignupController {
   final TextEditingController emailController = TextEditingController();
@@ -38,24 +39,40 @@ class SignupController {
       return false;
     }
 
-    if (mockUserDatabase.containsKey(email)) {
-      showMessage(context, 'Email already registered');
-      return false;
-    }
-
     return true;
   }
 
-  void signup(BuildContext context) {
+  Future<void> signup(BuildContext context) async {
     if (validateInputs(context)) {
       final email = emailController.text.trim();
       final password = passwordController.text;
-
-      // Add to mock "database"
-      mockUserDatabase[email] = password;
-
-      showMessage(context, 'Account created successfully');
-      Navigator.pushReplacementNamed(context, '/login');
+      final authApi = GetIt.instance<AuthApiService>();
+      try {
+        // Show loading indicator
+        showMessage(context, 'Creating account...');
+        final result = await authApi.signup(email, password);
+        if (result['success'] == true) {
+          // Clear the form
+          emailController.clear();
+          passwordController.clear();
+          confirmPasswordController.clear();
+          // Show success message
+          showMessage(context, result['message'] ?? 'Account created successfully!');
+          // Navigate to login page after a short delay
+          await Future.delayed(const Duration(seconds: 1));
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+        } else {
+          showMessage(context, result['message'] ?? 'Signup failed. Please try again.');
+        }
+      } catch (e) {
+        String errorMsg = 'Signup failed. Please try again.';
+        if (e is Exception && e.toString().contains('SocketException')) {
+          errorMsg = 'Network error. Please check your connection.';
+        }
+        showMessage(context, errorMsg);
+      }
     }
   }
 
@@ -65,4 +82,3 @@ class SignupController {
     );
   }
 }
-// TODO Implement this library.

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../bloc/bike/bike_bloc.dart';
 import '../bloc/bike/bike_event.dart';
 import '../bloc/bike/bike_state.dart';
 import '../../domain/entities/bike.dart';
+import 'package:provider/provider.dart';
+import 'cart_provider.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String bikeId;
@@ -109,7 +110,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       children: [
         Text(
           'Gallery',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -167,7 +168,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       children: [
         Text(
           bike.name,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -175,7 +176,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         const SizedBox(height: 8),
         Text(
           bike.brand,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 18,
             color: Colors.grey[600],
           ),
@@ -185,7 +186,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           children: [
             Text(
               '\$${bike.price.toStringAsFixed(0)}',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
@@ -203,7 +204,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
               child: Text(
                 'In Stock',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   color: Colors.green[800],
                   fontWeight: FontWeight.w500,
                 ),
@@ -214,7 +215,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         const SizedBox(height: 16),
         Text(
           bike.description,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 16,
             color: Colors.grey[800],
           ),
@@ -229,7 +230,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       children: [
         Text(
           'Specifications',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -253,14 +254,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         children: [
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -279,7 +280,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           children: [
             Text(
               'Reviews',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -290,7 +291,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               },
               child: Text(
                 'See All',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   color: Colors.blue,
                   fontWeight: FontWeight.w500,
                 ),
@@ -318,7 +319,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           backgroundColor: Colors.blue[100],
                           child: Text(
                             review.userName[0].toUpperCase(),
-                            style: const TextStyle(color: Colors.blue),
+                            style: TextStyle(color: Colors.blue),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -327,7 +328,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           children: [
                             Text(
                               review.userName,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -350,14 +351,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     const SizedBox(height: 12),
                     Text(
                       review.comment,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         color: Colors.grey[800],
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${review.date.day}/${review.date.month}/${review.date.year}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
                       ),
@@ -407,7 +408,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ),
                 Text(
                   _quantity.toString(),
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -427,7 +428,22 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           Expanded(
             child: ElevatedButton(
               onPressed: () {
-                // Add to cart
+                final state = context.read<BikeBloc>().state;
+                if (state is SingleBikeLoaded) {
+                  final bike = state.bike;
+                  final cartProvider = Provider.of<CartProvider>(context, listen: false);
+                  cartProvider.addItem(CartItem(
+                    id: bike.id,
+                    name: bike.name,
+                    imageUrl: bike.imageUrl,
+                    price: bike.price,
+                    quantity: _quantity,
+                    type: 'bike',
+                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${bike.name} added to cart!')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -438,7 +454,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               ),
               child: Text(
                 'Add to Cart',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../data/models/bike_model.dart';
 
 class BikeSpecifications extends Equatable {
   final String engine;
@@ -81,6 +82,10 @@ class Bike extends Equatable {
     required this.rating,
     required this.reviews,
   });
+
+  static Bike fromJson(Map<String, dynamic> json) {
+    return BikeModel.fromJson(json);
+  }
 
   @override
   List<Object?> get props => [

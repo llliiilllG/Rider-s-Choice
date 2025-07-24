@@ -1,262 +1,211 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../data/bike_data.dart';
+import 'package:get_it/get_it.dart';
+import '../../core/services/accessory_api_service.dart';
+import '../widgets/bike_card.dart';
+import 'package:provider/provider.dart';
+import 'cart_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccessoriesPage extends StatelessWidget {
   const AccessoriesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final cartProvider = Provider.of<CartProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accessoryApi = GetIt.instance<AccessoryApiService>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Motorcycle Accessories'),
+        title: const Text('Accessories'),
         centerTitle: true,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.75,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: AccessoryData.getAllAccessories().length,
-        itemBuilder: (context, index) {
-          final accessory = AccessoryData.getAllAccessories()[index];
-          return _buildAccessoryCard(context, accessory);
-        },
-      ),
-    );
-  }
-
-  Widget _buildAccessoryCard(BuildContext context, Accessory accessory) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          _showAccessoryDetails(context, accessory);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: Image.asset(
-                  accessory.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: accessoryApi.getAllAccessories(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Failed to load accessories'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No accessories found'));
+          }
+          final accessories = snapshot.data!;
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 20,
+                crossAxisSpacing: 20,
+                childAspectRatio: 0.7,
               ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      accessory.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      accessory.category,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              itemCount: accessories.length,
+              itemBuilder: (context, index) {
+                final accessory = accessories[index];
+                return Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  color: isDark ? const Color(0xFF23242B) : Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: accessory['imageUrl'].toString().startsWith('http')
+                              ? Image.network(
+                                  accessory['imageUrl'],
+                                  height: 90,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    height: 90,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.image_not_supported, size: 40),
+                                  ),
+                                )
+                              : Image.asset(
+                                  accessory['imageUrl'],
+                                  height: 90,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    height: 90,
+                                    color: Colors.grey[200],
+                                    child: const Icon(Icons.image_not_supported, size: 40),
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(height: 10),
                         Text(
-                          '\$${accessory.price.toStringAsFixed(0)}',
-                          style: GoogleFonts.poppins(
+                          accessory['name'],
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${accessory.stock} left',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: Colors.green[800],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAccessoryDetails(BuildContext context, Accessory accessory) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        accessory.imageUrl,
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      accessory.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      accessory.category,
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
+                        const SizedBox(height: 4),
                         Text(
-                          '\$${accessory.price.toStringAsFixed(0)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                          accessory['description'] ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.grey[400] : Colors.grey[700],
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
+                        Text(
+                          '\u0024${accessory['price'].toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
                           ),
-                          decoration: BoxDecoration(
-                            color: accessory.stock > 0 ? Colors.green[100] : Colors.red[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            accessory.stock > 0 ? 'In Stock' : 'Out of Stock',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: accessory.stock > 0 ? Colors.green[800] : Colors.red[800],
-                              fontWeight: FontWeight.w500,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  final prefs = await SharedPreferences.getInstance();
+                                  final faceIdEnabled = prefs.getBool('faceIdEnabled') ?? false;
+                                  if (faceIdEnabled) {
+                                    final authenticated = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Face ID Authentication'),
+                                        content: const Text('Simulating Face ID for purchase...'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text('Authenticate'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (authenticated != true) return;
+                                  }
+                                  cartProvider.addItem(CartItem(
+                                    id: accessory['id'],
+                                    name: accessory['name'],
+                                    imageUrl: accessory['imageUrl'],
+                                    price: accessory['price'],
+                                    quantity: 1,
+                                    type: 'accessory',
+                                  ));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('${accessory['name']} added to cart!')),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                child: const Text('Add to Cart', style: TextStyle(fontSize: 12)),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: const Icon(Icons.flash_on, color: Colors.orange),
+                              tooltip: 'Buy Now',
+                              onPressed: () async {
+                                final prefs = await SharedPreferences.getInstance();
+                                final faceIdEnabled = prefs.getBool('faceIdEnabled') ?? false;
+                                if (faceIdEnabled) {
+                                  final authenticated = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Face ID Authentication'),
+                                      content: const Text('Simulating Face ID for purchase...'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: const Text('Authenticate'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (authenticated != true) return;
+                                }
+                                cartProvider.addItem(CartItem(
+                                  id: accessory['id'],
+                                  name: accessory['name'],
+                                  imageUrl: accessory['imageUrl'],
+                                  price: accessory['price'],
+                                  quantity: 1,
+                                  type: 'accessory',
+                                ));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Purchase successful!')),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Description',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      accessory.description,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: accessory.stock > 0
-                            ? () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('${accessory.name} added to cart!'),
-                                  ),
-                                );
-                                Navigator.pop(context);
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text(
-                          accessory.stock > 0 ? 'Add to Cart' : 'Out of Stock',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          );
+        },
       ),
+      backgroundColor: isDark ? const Color(0xFF181A20) : Colors.white,
     );
   }
 } 

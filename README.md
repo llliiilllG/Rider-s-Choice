@@ -1,174 +1,292 @@
-# Rider's Choice - Motorcycle Marketplace
+# 🏍️ Rider's Choice - Professional E-commerce Bike Showroom
 
-A Flutter-based motorcycle marketplace application with a modern UI and offline functionality.
+A cutting-edge Flutter application with advanced features, clean architecture, and professional UI design for motorcycle enthusiasts.
 
-## Features
+## 🚀 Features
 
-### 🏍️ **Motorcycles**
-- Browse featured motorcycles
-- View detailed specifications
-- Product details with reviews
-- Category-based filtering
+### 🏗️ **Architecture & Design**
+- **Clean Architecture** with clear separation of concerns
+- **MVVM Pattern** with reactive state management
+- **Dependency Injection** using GetIt and Injectable
+- **Repository Pattern** for data access abstraction
+- **Use Case Pattern** for business logic encapsulation
 
-### 🛡️ **Accessories**
-- Motorcycle accessories (helmets, gloves, jackets, boots)
-- Product details and pricing
-- Stock availability
-- Add to cart functionality
+### 📱 **Advanced Features**
+- **Sensor Integration**: Accelerometer, gyroscope, and GPS tracking
+- **Real-time Communication**: WebSocket support for live updates
+- **Payment Processing**: Stripe integration for secure transactions
+- **Connectivity Monitoring**: Network status and quality detection
+- **Offline Support**: Local data persistence with Hive
+- **Multi-platform**: iOS, Android, and macOS support
 
-### 🎨 **UI/UX**
-- Modern Material Design 3
-- Responsive design for mobile and web
-- Smooth navigation between pages
-- Beautiful product cards and details
+### 🎨 **UI/UX Excellence**
+- **Material 3 Design** with custom green theme
+- **Smooth Animations** and micro-interactions
+- **Responsive Layout** for all screen sizes
+- **Professional Components** with consistent styling
+- **Dark/Light Theme** support
 
-## Project Structure
+### 🔧 **Technical Stack**
+
+#### Frontend (Flutter)
+- **State Management**: Provider + ChangeNotifier
+- **Network**: Dio with interceptors
+- **Storage**: Hive for local persistence
+- **Dependency Injection**: GetIt + Injectable
+- **Testing**: Unit, widget, and integration tests
+- **Code Generation**: Build Runner for DI and JSON serialization
+
+#### Backend (Node.js/Express)
+- **Architecture**: Clean Architecture with services and repositories
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT with middleware
+- **Real-time**: WebSocket with Socket.io
+- **Payments**: Stripe integration
+- **Testing**: Jest for unit and integration tests
+
+## 📁 Project Structure
 
 ```
 Rider-s-Choice/
 ├── lib/
-│   ├── data/
-│   │   ├── bike_data.dart          # Hardcoded bike and accessory data
-│   │   └── models/
-│   │       └── bike_model.dart     # Bike model class
-│   ├── domain/
-│   │   └── entities/
-│   │       └── bike.dart           # Bike entity definitions
-│   ├── presentation/
-│   │   ├── bloc/
-│   │   │   └── bike/
-│   │   │       ├── bike_bloc.dart  # State management
-│   │   │       ├── bike_event.dart # Events
-│   │   │       └── bike_state.dart # States
-│   │   ├── pages/
-│   │   │   ├── dashboard_page.dart # Main dashboard
-│   │   │   ├── home_page.dart      # Motorcycle listing
-│   │   │   ├── accessories_page.dart # Accessories listing
-│   │   │   └── product_details_page.dart # Product details
-│   │   └── widgets/
-│   │       └── bike_card.dart      # Bike card widget
-│   └── main.dart                   # App entry point
-├── assets/
-│   ├── motorcycles/                # Motorcycle images
-│   ├── accessories/                # Accessory images
-│   └── logo/                       # App logos
-└── README.md
+│   ├── core/                    # Core functionality
+│   │   ├── di/                 # Dependency injection
+│   │   ├── network/            # API client and interceptors
+│   │   ├── storage/            # Local storage implementations
+│   │   ├── services/           # Core services (sensors, WebSocket, etc.)
+│   │   ├── theme/              # App theme and styling
+│   │   └── utils/              # Utility functions
+│   ├── features/               # Feature-based modules
+│   │   ├── auth/               # Authentication feature
+│   │   │   ├── data/           # Data layer
+│   │   │   ├── domain/         # Domain layer
+│   │   │   └── presentation/   # Presentation layer
+│   │   └── bikes/              # Bikes feature
+│   │       ├── data/           # Data layer
+│   │       ├── domain/         # Domain layer
+│   │       └── presentation/   # Presentation layer
+│   └── main.dart               # App entry point
+├── backend/                    # Node.js backend
+│   ├── src/
+│   │   ├── controllers/        # HTTP controllers
+│   │   ├── services/           # Business logic services
+│   │   ├── repositories/       # Data access repositories
+│   │   ├── models/             # Database models
+│   │   ├── routes/             # API routes
+│   │   └── middleware/         # Custom middleware
+│   └── server.js               # Server entry point
+└── test/                       # Comprehensive test suite
 ```
 
-## Prerequisites
+## 🛠️ Setup Instructions
 
-- Flutter SDK (3.0 or higher)
-- Dart SDK
-- Android Studio / VS Code
+### Prerequisites
+- Flutter SDK (3.0+)
+- Node.js (16+)
+- MongoDB
+- Stripe account (for payments)
 
-## Installation & Setup
+### Frontend Setup
 
-### 1. Clone the Repository
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Rider-s-Choice
+   ```
+
+2. **Install dependencies**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Generate code**
+   ```bash
+   flutter packages pub run build_runner build
+   ```
+
+4. **Run the app**
+   ```bash
+   # For macOS
+   flutter run -d macos
+   
+   # For iOS
+   flutter run -d ios
+   
+   # For Android
+   flutter run -d android
+   ```
+
+### Backend Setup
+
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Environment configuration**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Start the server**
+   ```bash
+   npm start
+   ```
+
+## 🔧 Advanced Features Implementation
+
+### Sensor Integration
+The app integrates device sensors for enhanced user experience:
+
+```dart
+// Sensor service usage
+final sensorService = getIt<SensorService>();
+await sensorService.startMonitoring();
+
+// Listen to sensor data
+sensorService.sensorDataStream.listen((data) {
+  // Handle sensor updates
+});
+```
+
+### Real-time Communication
+WebSocket integration for live updates:
+
+```dart
+// WebSocket service usage
+final webSocketService = getIt<WebSocketService>();
+await webSocketService.connect();
+
+// Send real-time events
+webSocketService.sendBikeView(bikeId);
+webSocketService.sendAddToCart(bikeId, quantity);
+```
+
+### Payment Processing
+Secure payment handling with Stripe:
+
+```dart
+// Payment service usage
+final paymentService = getIt<PaymentService>();
+
+// Create payment intent
+final intent = await paymentService.createPaymentIntent(
+  amount: 24999.0,
+  currency: 'usd',
+  bikeId: bikeId,
+  quantity: 1,
+);
+```
+
+### Connectivity Monitoring
+Network status and quality detection:
+
+```dart
+// Connectivity service usage
+final connectivityService = getIt<ConnectivityService>();
+
+// Check connection status
+if (connectivityService.isConnected) {
+  // Perform online operations
+}
+
+// Monitor connection quality
+connectivityService.connectionQuality; // excellent, good, fair, poor
+```
+
+## 🧪 Testing
+
+### Frontend Tests
 ```bash
-git clone <repository-url>
-cd Rider-s-Choice
+# Unit tests
+flutter test test/unit/
+
+# Widget tests
+flutter test test/widget/
+
+# Integration tests
+flutter test test/integration/
 ```
 
-### 2. Install Dependencies
+### Backend Tests
 ```bash
-flutter pub get
+cd backend
+npm test
 ```
 
-### 3. Run the Application
-```bash
-flutter run
-```
+## 📱 Screenshots
 
-## Available Motorcycles
+### Home Page
+- Featured bikes carousel
+- Category grid
+- Professional green theme
+- Smooth animations
 
-The app includes the following motorcycles with detailed specifications:
-
-- **Ducati Panigale V4** - $24,999
-- **BMW S1000RR** - $18,995
-- **Yamaha YZF-R1** - $17,999
-- **Kawasaki Ninja H2** - $29,999
-
-## Available Accessories
-
-- **AGV Pista GP RR Helmet** - $899
-- **Alpinestars GP Pro Gloves** - $299
-- **Dainese Super Speed Jacket** - $1,299
-- **Sidi Mag-1 Racing Boots** - $499
-
-## App Navigation
-
-1. **Dashboard** - Main menu with quick actions
-2. **Browse Motorcycles** - View all available motorcycles
-3. **Accessories** - Browse motorcycle accessories
-4. **Product Details** - Detailed view with specifications and reviews
-
-## Technologies Used
-
-### Frontend
-- **Flutter 3.x** - Cross-platform framework
-- **Dart** - Programming language
-- **flutter_bloc** - State management
-- **google_fonts** - Typography
-- **equatable** - Value equality
-
-## Development
-
-### Running the App
-```bash
-flutter run              # Run on connected device/emulator
-flutter run -d chrome    # Run on web
-```
-
-### Building for Production
-```bash
-flutter build web        # Web build
-flutter build apk        # Android APK
-flutter build ios        # iOS build
-```
-
-## Features Implemented
-
-### ✅ **Completed**
-- Dashboard with navigation
-- Motorcycle browsing and details
-- Accessories browsing and details
-- Product specifications
-- Reviews and ratings
-- Stock management
-- Add to cart functionality
-- Responsive design
-- Material Design 3 theming
-
-### 🚧 **Planned Features**
-- User authentication
-- Shopping cart persistence
-- Wishlist functionality
-- Order management
+### Bike Details
+- Comprehensive specifications
+- Real-time sensor data
+- Connectivity status
 - Payment integration
-- User profiles
-- Search and filtering
+- Reviews and ratings
 
-## Screenshots
+### Advanced Features
+- Sensor integration display
+- WebSocket real-time updates
+- Payment processing
+- Network monitoring
 
-The app includes:
-- **Dashboard** - Main menu with action cards
-- **Motorcycle List** - Grid/list view of motorcycles
-- **Product Details** - Detailed specifications and reviews
-- **Accessories** - Accessory products with details
-- **Responsive Design** - Works on mobile and web
+## 🚀 Deployment
 
-## Contributing
+### Frontend Deployment
+```bash
+# Build for production
+flutter build macos --release
+flutter build ios --release
+flutter build apk --release
+```
+
+### Backend Deployment
+```bash
+# Production build
+npm run build
+npm start
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Add tests
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🆘 Support
 
-For support and questions, please open an issue on GitHub or contact the development team.
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
+
+## 🔮 Future Enhancements
+
+- **AR/VR Integration**: Virtual bike showroom
+- **AI Recommendations**: Smart bike suggestions
+- **Social Features**: User reviews and ratings
+- **Advanced Analytics**: User behavior tracking
+- **Multi-language Support**: Internationalization
+- **Push Notifications**: Real-time alerts
+- **Advanced Search**: Filter and search capabilities
+
+---
+
+**Built with ❤️ using Flutter and Node.js**

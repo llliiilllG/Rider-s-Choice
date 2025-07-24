@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -33,7 +32,7 @@ class DashboardScreen extends StatelessWidget {
       children: [
         Text(
           'Dashboard',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -98,7 +97,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
               ),
@@ -106,7 +105,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -123,7 +122,7 @@ class DashboardScreen extends StatelessWidget {
       children: [
         Text(
           'Featured Products',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -180,14 +179,14 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               name,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               price,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
@@ -205,7 +204,7 @@ class DashboardScreen extends StatelessWidget {
       children: [
         Text(
           'Recent Orders',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -228,15 +227,15 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 title: Text(
                   'Order #${1000 + index}',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                  style: TextStyle(fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   'Mountain Bike Pro',
-                  style: GoogleFonts.poppins(color: Colors.grey[600]),
+                  style: TextStyle(color: Colors.grey[600]),
                 ),
                 trailing: Text(
                   '\$1,299',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
                   ),

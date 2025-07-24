@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -69,7 +68,7 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text(
           'Rider\'s Choice',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -129,7 +128,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 8),
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],
               ),
@@ -137,7 +136,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 4),
             Text(
               value,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -154,7 +153,7 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text(
           'Featured Bikes',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -235,7 +234,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 8),
             Text(
               category,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue,
                 fontWeight: FontWeight.w500,
@@ -243,14 +242,14 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             Text(
               name,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               price,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
@@ -268,7 +267,7 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         Text(
           'Popular Accessories',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -349,7 +348,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 8),
             Text(
               category,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue,
                 fontWeight: FontWeight.w500,
@@ -357,14 +356,14 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             Text(
               name,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Text(
               price,
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.green,

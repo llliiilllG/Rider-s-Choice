@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/bike/bike_bloc.dart';
+import '../bloc/bike/bike_event.dart';
 import '../bloc/bike/bike_state.dart';
 import '../widgets/bike_card.dart';
 
@@ -11,7 +12,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rider\'s Choice'),
+        title: const Text('Bikes'),
         centerTitle: true,
       ),
       body: BlocBuilder<BikeBloc, BikeState>(
@@ -19,11 +20,12 @@ class HomePage extends StatelessWidget {
           if (state is BikeLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is BikeLoaded) {
+            final bikes = state.bikes;
             return ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: state.bikes.length,
+              itemCount: bikes.length,
               itemBuilder: (context, index) {
-                final bike = state.bikes[index];
+                final bike = bikes[index];
                 return BikeCard(bike: bike);
               },
             );
