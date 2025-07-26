@@ -78,8 +78,8 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.primaryGreen,
-              AppTheme.darkGreen,
+              primaryGreen,
+              darkGreen,
             ],
           ),
         ),
@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Icon(
                             Icons.motorcycle,
                             size: 60,
-                            color: AppTheme.primaryGreen,
+                            color: primaryGreen,
                           ),
                         ),
                       ),

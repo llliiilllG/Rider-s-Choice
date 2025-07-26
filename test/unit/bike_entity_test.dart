@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riders_choice/domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 
 void main() {
   group('BikeSpecifications', () {
@@ -165,6 +165,8 @@ void main() {
         isFeatured: true,
         rating: 4.8,
         reviews: testReviews,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
     });
 
@@ -181,6 +183,8 @@ void main() {
       expect(testBike.isFeatured, true);
       expect(testBike.rating, 4.8);
       expect(testBike.reviews, testReviews);
+      expect(testBike.createdAt, isNotNull);
+      expect(testBike.updatedAt, isNotNull);
     });
 
     test('should be equal when all properties are the same', () {
@@ -197,6 +201,8 @@ void main() {
         isFeatured: true,
         rating: 4.8,
         reviews: testReviews,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       final bike2 = Bike(
@@ -212,6 +218,8 @@ void main() {
         isFeatured: true,
         rating: 4.8,
         reviews: testReviews,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       expect(bike1, equals(bike2));
@@ -231,6 +239,8 @@ void main() {
         isFeatured: true,
         rating: 4.8,
         reviews: testReviews,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       final bike2 = Bike(
@@ -246,6 +256,8 @@ void main() {
         isFeatured: true,
         rating: 4.7,
         reviews: testReviews,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
 
       expect(bike1, isNot(equals(bike2)));
@@ -266,6 +278,8 @@ void main() {
       expect(props.contains(true), true);
       expect(props.contains(4.8), true);
       expect(props.contains(testReviews), true);
+      expect(props.contains(testBike.createdAt), true);
+      expect(props.contains(testBike.updatedAt), true);
     });
   });
 } 

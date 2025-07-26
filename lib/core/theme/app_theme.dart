@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Add missing color constants
+const Color primaryGreen = Color(0xFF43A047); // Example green
+const Color accentGreen = Color(0xFF00E676);  // Example accent green
+const Color darkGreen = Color(0xFF1B5E20);    // Example dark green
+const Color lightGreen = Color(0xFFB9F6CA);   // Example light green
 
 class AppTheme {
-  // Green Color Palette
-  static const Color primaryGreen = Color(0xFF4CAF50);
-  static const Color lightGreen = Color(0xFF81C784);
-  static const Color darkGreen = Color(0xFF2E7D32);
-  static const Color accentGreen = Color(0xFF66BB6A);
+  // Modern Bike Theme Color Palette
+  static const Color primaryColor = Color(0xFF1A1A1A); // Deep Black
+  static const Color accentColor = Color(0xFFFF6B35); // Vibrant Orange
+  static const Color secondaryColor = Color(0xFF2C2C2C); // Dark Gray
+  static const Color surfaceColor = Color(0xFFF5F5F5); // Light Gray
+  static const Color cardColor = Color(0xFFFFFFFF); // White
   
   // Neutral Colors
   static const Color backgroundLight = Color(0xFFFAFAFA);

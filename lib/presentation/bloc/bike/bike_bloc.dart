@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/services/bike_api_service.dart';
 import 'bike_event.dart';
 import 'bike_state.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 
 class BikeBloc extends Bloc<BikeEvent, BikeState> {
   final BikeApiService apiService;

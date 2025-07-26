@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class BikeCard extends StatefulWidget {
@@ -70,7 +70,7 @@ class _BikeCardState extends State<BikeCard>
             opacity: _fadeAnimation.value,
             child: Card(
               elevation: 8,
-              shadowColor: AppTheme.primaryGreen.withOpacity(0.3),
+              shadowColor: primaryGreen.withOpacity(0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -86,7 +86,7 @@ class _BikeCardState extends State<BikeCard>
                       end: Alignment.bottomRight,
                       colors: [
                         Colors.white,
-                                                 AppTheme.primaryGreen.withOpacity(0.05),
+                        primaryGreen.withOpacity(0.05),
                       ],
                     ),
                   ),
@@ -110,11 +110,11 @@ class _BikeCardState extends State<BikeCard>
                                 return Container(
                                   height: 180,
                                   width: double.infinity,
-                                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                                  color: primaryGreen.withOpacity(0.1),
                                   child: Icon(
                                     Icons.motorcycle,
                                     size: 60,
-                                    color: AppTheme.primaryGreen,
+                                    color: primaryGreen,
                                   ),
                                 );
                               },
@@ -146,7 +146,7 @@ class _BikeCardState extends State<BikeCard>
                                         : Icons.favorite_border,
                                     color: widget.isInWishlist
                                         ? Colors.red
-                                        : AppTheme.primaryGreen,
+                                        : primaryGreen,
                                     size: 20,
                                   ),
                                 ),
@@ -163,7 +163,7 @@ class _BikeCardState extends State<BikeCard>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryGreen,
+                                  color: primaryGreen,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Text(
@@ -191,7 +191,7 @@ class _BikeCardState extends State<BikeCard>
                                 Text(
                                   widget.bike.brand,
                                   style: TextStyle(
-                                    color: AppTheme.primaryGreen,
+                                    color: primaryGreen,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -249,7 +249,7 @@ class _BikeCardState extends State<BikeCard>
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryGreen,
+                                    color: primaryGreen,
                                   ),
                                 ),
                                 Container(
@@ -287,7 +287,7 @@ class _BikeCardState extends State<BikeCard>
                                     ? widget.onTap
                                     : null,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryGreen,
+                                  backgroundColor: primaryGreen,
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(

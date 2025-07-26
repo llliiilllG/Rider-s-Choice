@@ -7,15 +7,18 @@ import '../../../../core/services/sensor_service.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/payment_service.dart';
 import '../../../../core/services/connectivity_service.dart';
-import '../../domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import '../widgets/bike_card.dart';
+import '../../../../core/services/bike_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/services/order_api_service.dart';
 
 class BikeDetailsPage extends StatefulWidget {
-  final Bike bike;
+  final String bikeId;
 
   const BikeDetailsPage({
     Key? key,
-    required this.bike,
+    required this.bikeId,
   }) : super(key: key);
 
   @override
@@ -35,14 +38,16 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
 
   bool _isInWishlist = false;
   int _quantity = 1;
-  bool _isLoading = false;
+  bool _isLoading = true;
+  String? _errorMessage;
+  Bike? _bike;
 
   @override
   void initState() {
     super.initState();
     _initializeServices();
     _setupAnimations();
-    _sendBikeViewEvent();
+    _fetchBikeDetails();
   }
 
   void _initializeServices() {
@@ -69,12 +74,30 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
       parent: _animationController,
       curve: Curves.easeOutBack,
     ));
-
-    _animationController.forward();
   }
 
-  void _sendBikeViewEvent() {
-    _webSocketService.sendBikeView(widget.bike.id);
+  Future<void> _fetchBikeDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final api = getIt<BikeApiService>();
+      final bike = await api.getBikeById(widget.bikeId);
+      setState(() {
+        _bike = bike;
+        _isLoading = false;
+      });
+      _animationController.forward();
+      if (bike != null) {
+        _webSocketService.sendBikeView(bike.id);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load bike details.';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -85,6 +108,18 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red))),
+      );
+    }
+    final bike = _bike!;
     return Scaffold(
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -99,15 +134,15 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                   fit: StackFit.expand,
                   children: [
                     Image.asset(
-                      widget.bike.imageUrl,
+                      bike.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: AppTheme.primaryGreen.withOpacity(0.1),
+                          color: primaryGreen.withOpacity(0.1),
                           child: Icon(
                             Icons.motorcycle,
                             size: 100,
-                            color: AppTheme.primaryGreen,
+                            color: primaryGreen,
                           ),
                         );
                       },
@@ -126,7 +161,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                       ),
                     ),
                     // Featured badge
-                    if (widget.bike.isFeatured)
+                    if (bike.isFeatured)
                       Positioned(
                         top: 60,
                         left: 16,
@@ -136,7 +171,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen,
+                            color: primaryGreen,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Text(
@@ -152,7 +187,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                   ],
                 ),
                 title: Text(
-                  widget.bike.name,
+                  bike.name,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -191,9 +226,9 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '\$${widget.bike.price.toStringAsFixed(2)}',
+                            '\$${bike.price.toStringAsFixed(2)}',
                             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: AppTheme.primaryGreen,
+                              color: primaryGreen,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -202,7 +237,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                               Icon(Icons.star, color: Colors.amber, size: 20),
                               const SizedBox(width: 4),
                               Text(
-                                widget.bike.rating.toString(),
+                                bike.rating.toString(),
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ],
@@ -220,13 +255,13 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen.withOpacity(0.1),
+                              color: primaryGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
-                              widget.bike.brand,
+                              bike.brand,
                               style: TextStyle(
-                                color: AppTheme.primaryGreen,
+                                color: primaryGreen,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -242,7 +277,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
-                              widget.bike.category,
+                              bike.category,
                               style: TextStyle(
                                 color: Colors.grey[700],
                                 fontWeight: FontWeight.w600,
@@ -262,7 +297,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        widget.bike.description,
+                        bike.description,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           height: 1.6,
                         ),
@@ -293,7 +328,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                       const SizedBox(height: 24),
 
                       // Reviews Section
-                      if (widget.bike.reviews.isNotEmpty) ...[
+                      if (bike.reviews.isNotEmpty) ...[
                         Text(
                           'Reviews',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -324,7 +359,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   }
 
   Widget _buildSpecificationsCard() {
-    final specs = widget.bike.specifications;
+    final specs = _bike!.specifications;
     return Card(
       elevation: 2,
       child: Padding(
@@ -368,7 +403,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   }
 
   Widget _buildStockStatusCard() {
-    final isInStock = widget.bike.stock > 0;
+    final isInStock = _bike!.stock > 0;
     return Card(
       elevation: 2,
       color: isInStock ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
@@ -395,7 +430,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                   ),
                   if (isInStock)
                     Text(
-                      '${widget.bike.stock} units available',
+                      '${_bike!.stock} units available',
                       style: TextStyle(
                         color: Colors.grey[600],
                       ),
@@ -432,7 +467,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
               ),
             ),
             IconButton(
-              onPressed: _quantity < widget.bike.stock ? _increaseQuantity : null,
+              onPressed: _quantity < _bike!.stock ? _increaseQuantity : null,
               icon: const Icon(Icons.add_circle_outline),
             ),
           ],
@@ -447,9 +482,9 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: widget.bike.stock > 0 && !_isLoading ? _addToCart : null,
+            onPressed: _bike!.stock > 0 && !_isLoading ? _addToCart : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryGreen,
+              backgroundColor: primaryGreen,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -478,10 +513,10 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: widget.bike.stock > 0 ? _buyNow : null,
+            onPressed: _bike!.stock > 0 ? _buyNow : null,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppTheme.primaryGreen,
-              side: const BorderSide(color: AppTheme.primaryGreen),
+              foregroundColor: primaryGreen,
+              side: const BorderSide(color: primaryGreen),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -506,7 +541,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: widget.bike.reviews.map((review) {
+          children: _bike!.reviews.map((review) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Column(
@@ -516,7 +551,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                     children: [
                       CircleAvatar(
                         radius: 16,
-                        backgroundColor: AppTheme.primaryGreen,
+                        backgroundColor: primaryGreen,
                         child: Text(
                           review.userName[0].toUpperCase(),
                           style: const TextStyle(
@@ -578,7 +613,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.sensors, color: AppTheme.primaryGreen),
+                Icon(Icons.sensors, color: primaryGreen),
                 const SizedBox(width: 8),
                 Text(
                   'Sensor Integration',
@@ -622,7 +657,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
           children: [
             Row(
               children: [
-                Icon(Icons.wifi, color: AppTheme.primaryGreen),
+                Icon(Icons.wifi, color: primaryGreen),
                 const SizedBox(width: 8),
                 Text(
                   'Connection Status',
@@ -683,7 +718,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
     setState(() {
       _isInWishlist = !_isInWishlist;
     });
-    _webSocketService.sendWishlistToggle(widget.bike.id, _isInWishlist);
+    _webSocketService.sendWishlistToggle(_bike!.id, _isInWishlist);
   }
 
   void _shareBike() {
@@ -694,7 +729,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   }
 
   void _increaseQuantity() {
-    if (_quantity < widget.bike.stock) {
+    if (_quantity < _bike!.stock) {
       setState(() {
         _quantity++;
       });
@@ -709,38 +744,58 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
     }
   }
 
-  void _addToCart() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<String> _getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId') ?? '';
+    return userId;
+  }
 
+  void _addToCart() async {
+    setState(() => _isLoading = true);
     try {
-      _webSocketService.sendAddToCart(widget.bike.id, _quantity);
+      final userId = await _getUserId();
+      if (userId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to add items to cart')),
+        );
+        return;
+      }
+      await getIt<BikeApiService>().addToCart(userId, _bike!.id, _quantity);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added ${widget.bike.name} to cart'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
+        const SnackBar(content: Text('Added to cart successfully!')),
       );
+      Navigator.pushReplacementNamed(context, '/cart');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to add to cart: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Failed to add to cart: $e')),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   void _buyNow() async {
-    // TODO: Navigate to checkout page
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Checkout functionality coming soon!')),
-    );
+    setState(() => _isLoading = true);
+    try {
+      final userId = await _getUserId();
+      if (userId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to place orders')),
+        );
+        return;
+      }
+      await getIt<OrderApiService>().createOrderForBike(userId, _bike!, _quantity);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order placed successfully!')),
+      );
+      Navigator.pushReplacementNamed(context, '/orders');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to place order: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   String _formatDate(DateTime date) {

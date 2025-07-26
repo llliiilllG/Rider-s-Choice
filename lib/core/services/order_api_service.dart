@@ -30,6 +30,36 @@ class OrderApiService {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<void> createOrderForBike(String userId, dynamic bike, int quantity) async {
+    await _dio.post('$baseUrl/orders', data: {
+      'userId': userId,
+      'products': [
+        {
+          'name': bike.name,
+          'quantity': quantity,
+          'price': bike.price,
+          'productImage': bike.imageUrl,
+        }
+      ],
+      'total': bike.price * quantity,
+      'status': 'pending',
+    });
+  }
+
+  Future<void> createOrderFromCart(String userId, List<Map<String, dynamic>> cartItems, double totalPrice) async {
+    await _dio.post('$baseUrl/orders', data: {
+      'userId': userId,
+      'products': cartItems.map((item) => {
+        'name': item['name'],
+        'quantity': item['quantity'],
+        'price': item['price'],
+        'productImage': item['imageUrl'],
+      }).toList(),
+      'total': totalPrice,
+      'status': 'pending',
+    });
+  }
+
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');

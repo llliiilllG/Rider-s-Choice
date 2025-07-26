@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
-import '../../domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import '../../domain/usecases/get_bikes_usecase.dart';
 import '../../domain/usecases/get_featured_bikes_usecase.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riders_choice/data/bike_data.dart';
-import 'package:riders_choice/domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 
 void main() {
   group('BikeData', () {

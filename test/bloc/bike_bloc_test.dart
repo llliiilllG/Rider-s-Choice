@@ -6,30 +6,25 @@ import 'package:riders_choice/presentation/bloc/bike/bike_state.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:riders_choice/core/services/bike_api_service.dart';
-import 'package:riders_choice/domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 
 class MockBikeApiService extends Mock implements BikeApiService {}
 
 final sampleBike = Bike(
-  id: 'b1',
+  id: '1',
   name: 'Test Bike',
   brand: 'Test Brand',
-  price: 10000,
-  category: 'Superbike',
+  price: 1000.0,
+  category: 'Test Category',
   imageUrl: '',
-  description: 'A test bike',
-  specifications: const BikeSpecifications(
-    engine: 'Test Engine',
-    power: '100 hp',
-    torque: '50 lb-ft',
-    transmission: '6-speed',
-    weight: '400 lbs',
-    fuelCapacity: '4.0 gallons',
-  ),
-  stock: 5,
-  isFeatured: true,
-  rating: 4.5,
-  reviews: const [],
+  description: '',
+  specifications: BikeSpecifications(engine: '', power: '', torque: '', transmission: '', weight: '', fuelCapacity: ''),
+  stock: 1,
+  isFeatured: false,
+  rating: 0.0,
+  reviews: [],
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
 );
 
 void main() {

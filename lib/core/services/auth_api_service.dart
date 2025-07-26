@@ -2,7 +2,8 @@ import 'package:dio/dio.dart';
 
 class AuthApiService {
   final Dio _dio;
-  final String baseUrl = 'http://localhost:5050/api';
+  // final String baseUrl = 'http://localhost:5050/api';
+  final String baseUrl = 'http://127.0.0.1:5050/api';
 
   AuthApiService({Dio? dio}) : _dio = dio ?? Dio();
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riders_choice/domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import 'package:riders_choice/presentation/widgets/bike_card.dart';
 import 'package:riders_choice/data/bike_data.dart';
 
@@ -10,7 +10,22 @@ void main() {
 
     setUp(() {
       // Use a real bike from the current data
-      testBike = BikeData.getAllBikes().first;
+      testBike = Bike(
+        id: '1',
+        name: 'Test Bike',
+        brand: 'Test Brand',
+        price: 1000.0,
+        category: 'Test Category',
+        imageUrl: '',
+        description: '',
+        specifications: BikeSpecifications(engine: '', power: '', torque: '', transmission: '', weight: '', fuelCapacity: ''),
+        stock: 1,
+        isFeatured: false,
+        rating: 0.0,
+        reviews: [],
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
     });
 
     testWidgets('should display bike information correctly', (WidgetTester tester) async {

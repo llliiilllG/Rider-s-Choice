@@ -15,6 +15,11 @@ import '../services/websocket_service.dart';
 import '../services/payment_service.dart';
 import '../services/connectivity_service.dart';
 import '../../presentation/bloc/bike/bike_bloc.dart';
+import '../../features/bikes/presentation/viewmodels/bikes_viewmodel.dart';
+import '../../features/bikes/domain/usecases/get_bikes_usecase.dart';
+import '../../features/bikes/domain/usecases/get_featured_bikes_usecase.dart';
+import '../../features/bikes/domain/repositories/bike_repository.dart';
+import '../../features/bikes/data/repositories/bike_repository_impl.dart';
 
 final getIt = GetIt.instance;
 
@@ -45,8 +50,18 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<PaymentService>(() => PaymentService(getIt<ApiClient>(), getIt<LocalStorage>()));
   getIt.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
 
+  // Register use cases
+  getIt.registerLazySingleton<GetBikesUseCase>(() => GetBikesUseCase(getIt<BikeRepository>()));
+  getIt.registerLazySingleton<GetFeaturedBikesUseCase>(() => GetFeaturedBikesUseCase(getIt<BikeRepository>()));
+
+  // Register BikesViewModel
+  getIt.registerFactory<BikesViewModel>(() => BikesViewModel(getIt<GetBikesUseCase>(), getIt<GetFeaturedBikesUseCase>()));
+
   // Register BikeBloc
   getIt.registerFactory<BikeBloc>(() => BikeBloc(apiService: getIt<BikeApiService>()));
+
+  // Register BikeRepository
+  getIt.registerLazySingleton<BikeRepository>(() => BikeRepositoryImpl(getIt<BikeApiService>()));
 }
 
 // Service locator pattern for easy access

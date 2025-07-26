@@ -84,6 +84,60 @@ class Bike extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+
+  factory Bike.fromJson(Map<String, dynamic> json) {
+    String? imageUrl = json['imageUrl'] ?? json['productImage'];
+    if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      imageUrl = 'http://localhost:5050/uploads/$imageUrl'; // Change to your backend host if needed
+    }
+    return Bike(
+      id: json['_id'] ?? json['id'] ?? '',
+      name: json['name'] ?? json['model'] ?? '',
+      brand: json['brand'] ?? '',
+      price: (json['price'] is int) ? (json['price'] as int).toDouble() : (json['price'] ?? 0.0),
+      category: json['category'] ?? (json['categoryId']?['name'] ?? ''),
+      imageUrl: imageUrl ?? '',
+      description: json['description'] ?? '',
+      specifications: BikeSpecifications(
+        engine: json['engine'] ?? '',
+        power: json['power'] ?? '',
+        torque: json['torque'] ?? '',
+        transmission: json['transmission'] ?? '',
+        weight: json['weight'] ?? '',
+        fuelCapacity: json['fuelCapacity'] ?? '',
+      ),
+      stock: json['stock'] ?? 0,
+      isFeatured: json['isFeatured'] ?? false,
+      rating: (json['rating'] is int) ? (json['rating'] as int).toDouble() : (json['rating'] ?? 0.0),
+      reviews: [],
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'brand': brand,
+    'price': price,
+    'category': category,
+    'imageUrl': imageUrl,
+    'description': description,
+    'specifications': {
+      'engine': specifications.engine,
+      'power': specifications.power,
+      'torque': specifications.torque,
+      'transmission': specifications.transmission,
+      'weight': specifications.weight,
+      'fuelCapacity': specifications.fuelCapacity,
+    },
+    'stock': stock,
+    'isFeatured': isFeatured,
+    'rating': rating,
+    'reviews': [],
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 }
 
 class BikeSpecifications extends Equatable {

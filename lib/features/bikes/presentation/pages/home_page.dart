@@ -6,54 +6,237 @@ import '../../../../core/di/injection.dart';
 import '../viewmodels/bikes_viewmodel.dart';
 import '../widgets/bike_card.dart';
 import '../pages/bike_details_page.dart';
-import '../../domain/entities/bike.dart';
+import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
+import 'package:get_it/get_it.dart';
+import '../../../../core/services/bike_api_service.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({Key? key}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: AppConstants.mediumAnimation,
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: IndexedStack(
+      body: IndexedStack(
           index: _currentIndex,
-          children: const [
-            _HomeTab(),
-            _BikesTab(),
-            _CartTab(),
-            _OrdersTab(),
-            _ProfileTab(),
-          ],
-        ),
+        children: [
+          // Home Tab
+          ChangeNotifierProvider<BikesViewModel>.value(
+            value: getIt<BikesViewModel>()..loadBikes(),
+            child: Consumer<BikesViewModel>(
+              builder: (context, viewModel, child) {
+                if (viewModel.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (viewModel.errorMessage != null) {
+                  return Center(child: Text(viewModel.errorMessage!, style: const TextStyle(color: Colors.red)));
+                }
+                final bikes = List.of(viewModel.bikes);
+                // Sort by createdAt descending if available
+                bikes.sort((a, b) {
+                  if (a.createdAt == null || b.createdAt == null) return 0;
+                  return b.createdAt.compareTo(a.createdAt);
+                });
+                // Get unique categories from bikes
+                final categories = bikes.map((b) => b.category).toSet().toList();
+                return ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    // Categories
+                    if (categories.isNotEmpty) ...[
+                      const Text(
+                        'Categories',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 40,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: categories.length,
+                          separatorBuilder: (context, i) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final category = categories[index];
+                            return Chip(
+                              label: Text(category, style: const TextStyle(color: Colors.white)),
+                              backgroundColor: Colors.grey[850],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    // Recently Added Bikes
+                    const Text(
+                      'Recently Added Bikes',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    bikes.isEmpty
+                        ? const Center(child: Text('No bikes available'))
+                        : SizedBox(
+                            height: 220,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: bikes.length,
+                              separatorBuilder: (context, i) => const SizedBox(width: 16),
+                              itemBuilder: (context, index) {
+                                final bike = bikes[index];
+                                return Container(
+                                  width: 180,
+                                  child: Card(
+                                    elevation: 8,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(16),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => BikeDetailsPage(bikeId: bike.id),
+                                          ),
+                                        );
+                                      },
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          Expanded(
+                                            child: ClipRRect(
+                                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                              child: bike.imageUrl != null && bike.imageUrl.isNotEmpty
+                                                  ? Image.network(
+                                                      bike.imageUrl,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+                                                    )
+                                                  : const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(10.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  bike.name,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '\u20B9${bike.price}',
+                                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.green),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                    const SizedBox(height: 28),
+                    // Browse All Bikes
+                    const Text(
+                      'Browse All Bikes',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    bikes.isEmpty
+                        ? const Center(child: Text('No bikes available'))
+                        : GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.8,
+                            ),
+                            itemCount: bikes.length,
+                            itemBuilder: (context, index) {
+                              final bike = bikes[index];
+                              return Card(
+                                elevation: 8,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => BikeDetailsPage(bikeId: bike.id),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                          child: bike.imageUrl != null && bike.imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  bike.imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+                                                )
+                                              : const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(12.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              bike.name,
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '\u20B9${bike.price}',
+                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.green),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // Bikes Tab Placeholder
+          const Center(child: Text('Bikes Tab')), 
+          // Cart Tab Placeholder
+          const Center(child: Text('Cart Tab')), 
+          // Orders Tab Placeholder
+          const Center(child: Text('Orders Tab')), 
+          // Profile Tab Placeholder
+          const Center(child: Text('Profile Tab')), 
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -104,16 +287,26 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   late BikesViewModel _bikesViewModel;
+  List<Bike> _recentBikes = [];
 
   @override
   void initState() {
     super.initState();
     _bikesViewModel = getIt<BikesViewModel>();
     _loadData();
+    _loadRecentBikes();
   }
 
   Future<void> _loadData() async {
     await _bikesViewModel.loadFeaturedBikes();
+  }
+
+  Future<void> _loadRecentBikes() async {
+    final api = GetIt.instance<BikeApiService>();
+    final recent = await api.getRecentlyAddedBikes();
+    setState(() {
+      _recentBikes = recent.map((b) => Bike.fromJson(b as Map<String, dynamic>)).toList();
+    });
   }
 
   @override
@@ -147,7 +340,7 @@ class _HomeTabState extends State<_HomeTab> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
+                  colors: [primaryGreen, darkGreen],
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -246,7 +439,7 @@ class _HomeTabState extends State<_HomeTab> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BikeDetailsPage(bike: bike),
+                                  builder: (context) => BikeDetailsPage(bikeId: bike.id),
                                 ),
                               );
                             },
@@ -262,6 +455,42 @@ class _HomeTabState extends State<_HomeTab> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Recently Added Section
+            if (_recentBikes.isNotEmpty) ...[
+              Text(
+                'Recently Added',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 220,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _recentBikes.length,
+                  itemBuilder: (context, index) {
+                    final bike = _recentBikes[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: BikeCard(
+                        bike: bike,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BikeDetailsPage(bikeId: bike.id),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // Categories Section
             Text(
@@ -343,7 +572,7 @@ class _CategoryCard extends StatelessWidget {
               Icon(
                 icon,
                 size: 32,
-                color: AppTheme.primaryGreen,
+                color: primaryGreen,
               ),
               const SizedBox(height: 8),
               Text(
