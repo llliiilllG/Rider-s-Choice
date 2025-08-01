@@ -9,6 +9,10 @@ import '../pages/bike_details_page.dart';
 import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import 'package:get_it/get_it.dart';
 import '../../../../core/services/bike_api_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../cart/presentation/pages/cart_page.dart';
+import '../../../orders/presentation/pages/orders_page.dart';
+import '../../../profile/presentation/pages/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -20,222 +24,216 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
+  Widget _buildImageWidget(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return const Icon(Icons.motorcycle, size: 64, color: Colors.grey);
+    }
+    
+    // If it's just a filename, construct the backend URL
+    String fullImageUrl = imageUrl;
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
+      fullImageUrl = 'http://localhost:3000/uploads/$imageUrl';
+    }
+    
+    return CachedNetworkImage(
+      imageUrl: fullImageUrl,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: Colors.grey[200],
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      errorWidget: (context, url, error) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
           index: _currentIndex,
         children: [
-          // Home Tab
+          // Home Tab - New Dashboard Design
+          const _HomeTab(),
+          // Bikes Tab - All Bikes Listing
           ChangeNotifierProvider<BikesViewModel>.value(
             value: getIt<BikesViewModel>()..loadBikes(),
             child: Consumer<BikesViewModel>(
               builder: (context, viewModel, child) {
                 if (viewModel.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
                 }
                 if (viewModel.errorMessage != null) {
-                  return Center(child: Text(viewModel.errorMessage!, style: const TextStyle(color: Colors.red)));
-                }
-                final bikes = List.of(viewModel.bikes);
-                // Sort by createdAt descending if available
-                bikes.sort((a, b) {
-                  if (a.createdAt == null || b.createdAt == null) return 0;
-                  return b.createdAt.compareTo(a.createdAt);
-                });
-                // Get unique categories from bikes
-                final categories = bikes.map((b) => b.category).toSet().toList();
-                return ListView(
-                  padding: const EdgeInsets.all(16.0),
-                  children: [
-                    // Categories
-                    if (categories.isNotEmpty) ...[
-                      const Text(
-                        'Categories',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  return Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            viewModel.errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => viewModel.loadBikes(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 40,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categories.length,
-                          separatorBuilder: (context, i) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            final category = categories[index];
-                            return Chip(
-                              label: Text(category, style: const TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.grey[850],
+                    ),
+                  );
+                }
+                
+                final bikes = viewModel.bikes;
+                if (bikes.isEmpty) {
+                  return const Scaffold(
+                    body: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.motorcycle, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No bikes available',
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                
+                return Scaffold(
+                  appBar: AppBar(
+                    title: const Text('All Bikes'),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: () {
+                          // TODO: Implement search
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.filter_list),
+                        onPressed: () {
+                          // TODO: Implement filter
+                        },
+                      ),
+                    ],
+                  ),
+                  body: GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.75,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: bikes.length,
+                    itemBuilder: (context, index) {
+                      final bike = bikes[index];
+                      return Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/bike-details',
+                              arguments: bike.id,
                             );
                           },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: _buildImageWidget(bike.imageUrl),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      bike.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      bike.brand,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '₹${bike.price.toStringAsFixed(0)}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: primaryGreen,
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: primaryGreen.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            bike.category,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: primaryGreen,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    // Recently Added Bikes
-                    const Text(
-                      'Recently Added Bikes',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    bikes.isEmpty
-                        ? const Center(child: Text('No bikes available'))
-                        : SizedBox(
-                            height: 220,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: bikes.length,
-                              separatorBuilder: (context, i) => const SizedBox(width: 16),
-                              itemBuilder: (context, index) {
-                                final bike = bikes[index];
-                                return Container(
-                                  width: 180,
-                                  child: Card(
-                                    elevation: 8,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(16),
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => BikeDetailsPage(bikeId: bike.id),
-                                          ),
-                                        );
-                                      },
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: ClipRRect(
-                                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                              child: bike.imageUrl != null && bike.imageUrl.isNotEmpty
-                                                  ? Image.network(
-                                                      bike.imageUrl,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
-                                                    )
-                                                  : const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(10.0),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  bike.name,
-                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '\u20B9${bike.price}',
-                                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.green),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                    const SizedBox(height: 28),
-                    // Browse All Bikes
-                    const Text(
-                      'Browse All Bikes',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    bikes.isEmpty
-                        ? const Center(child: Text('No bikes available'))
-                        : GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.8,
-                            ),
-                            itemCount: bikes.length,
-                            itemBuilder: (context, index) {
-                              final bike = bikes[index];
-                              return Card(
-                                elevation: 8,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => BikeDetailsPage(bikeId: bike.id),
-                                      ),
-                                    );
-                                  },
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Expanded(
-                                        child: ClipRRect(
-                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                          child: bike.imageUrl != null && bike.imageUrl.isNotEmpty
-                                              ? Image.network(
-                                                  bike.imageUrl,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
-                                                )
-                                              : const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(12.0),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              bike.name,
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              '\u20B9${bike.price}',
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.green),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ],
+                      );
+                    },
+                  ),
                 );
               },
             ),
-          ),
-          // Bikes Tab Placeholder
-          const Center(child: Text('Bikes Tab')), 
-          // Cart Tab Placeholder
-          const Center(child: Text('Cart Tab')), 
-          // Orders Tab Placeholder
-          const Center(child: Text('Orders Tab')), 
-          // Profile Tab Placeholder
-          const Center(child: Text('Profile Tab')), 
+          ), 
+          // Cart Tab
+          const CartPage(), 
+          // Orders Tab
+          const OrdersPage(), 
+          // Profile Tab
+          const ProfilePage(), 
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -288,236 +286,593 @@ class _HomeTab extends StatefulWidget {
 class _HomeTabState extends State<_HomeTab> {
   late BikesViewModel _bikesViewModel;
   List<Bike> _recentBikes = [];
+  List<Bike> _featuredBikes = [];
 
   @override
   void initState() {
     super.initState();
     _bikesViewModel = getIt<BikesViewModel>();
     _loadData();
-    _loadRecentBikes();
   }
 
   Future<void> _loadData() async {
     await _bikesViewModel.loadFeaturedBikes();
+    await _loadRecentBikes();
   }
 
   Future<void> _loadRecentBikes() async {
     final api = GetIt.instance<BikeApiService>();
     final recent = await api.getRecentlyAddedBikes();
     setState(() {
-      _recentBikes = recent.map((b) => Bike.fromJson(b as Map<String, dynamic>)).toList();
+      _recentBikes = recent;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rider\'s Choice'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search
-            },
+    return CustomScrollView(
+      slivers: [
+        // Custom App Bar
+        SliverAppBar(
+          expandedHeight: 120,
+          floating: false,
+          pinned: true,
+          backgroundColor: primaryGreen,
+          flexibleSpace: FlexibleSpaceBar(
+            title: const Text(
+              'Rider\'s Choice',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            background: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [primaryGreen, darkGreen],
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.motorcycle,
+                  size: 60,
+                  color: Colors.white54,
+                ),
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Show notifications
-            },
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () {
+                // TODO: Implement search
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              onPressed: () {
+                // TODO: Show notifications
+              },
+            ),
+          ],
+        ),
+        
+        // Main Content
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                _buildWelcomeSection(),
+                const SizedBox(height: 24),
+                
+                // Quick Stats
+                _buildQuickStats(),
+                const SizedBox(height: 24),
+                
+                // Categories Section
+                _buildCategoriesSection(),
+                const SizedBox(height: 24),
+                
+                // Featured Bikes Section
+                _buildFeaturedBikesSection(),
+                const SizedBox(height: 24),
+                
+                // Recent Bikes Section
+                _buildRecentBikesSection(),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [primaryGreen, darkGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome Back!',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Discover your perfect ride',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.motorcycle,
+              color: Colors.white,
+              size: 32,
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryGreen, darkGreen],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome to Rider\'s Choice',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Discover the perfect bike for your adventure',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
+    );
+  }
 
-            // Featured Bikes Section
+  Widget _buildQuickStats() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.motorcycle,
+            title: 'Total Bikes',
+            value: '${_bikesViewModel.bikes.length}',
+            color: primaryGreen,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.category,
+            title: 'Categories',
+            value: '${AppConstants.bikeCategories.length}',
+            color: Colors.orange,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            icon: Icons.star,
+            title: 'Featured',
+            value: '${_bikesViewModel.bikes.where((b) => b.isFeatured).length}',
+            color: Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Categories',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: AppConstants.bikeCategories.length,
+            itemBuilder: (context, index) {
+              final category = AppConstants.bikeCategories[index];
+              return Container(
+                width: 120,
+                margin: const EdgeInsets.only(right: 12),
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      // TODO: Navigate to category
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [
+                            primaryGreen.withOpacity(0.1),
+                            primaryGreen.withOpacity(0.05),
+                          ],
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _getCategoryIcon(category),
+                            size: 32,
+                            color: primaryGreen,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            category,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedBikesSection() {
+    final featuredBikes = _bikesViewModel.bikes.where((b) => b.isFeatured).toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Text(
               'Featured Bikes',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
-            ChangeNotifierProvider.value(
-              value: _bikesViewModel,
-              child: Consumer<BikesViewModel>(
-                builder: (context, viewModel, child) {
-                  if (viewModel.isLoading) {
-                    return const SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-
-                  if (viewModel.errorMessage != null) {
-                    return SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 48,
-                              color: Colors.grey,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Failed to load bikes',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: _loadData,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (viewModel.featuredBikes.isEmpty) {
-                    return const SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: Text('No featured bikes available'),
-                      ),
-                    );
-                  }
-
-                  return SizedBox(
-                    height: 400,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: viewModel.featuredBikes.length,
-                      itemBuilder: (context, index) {
-                        final bike = viewModel.featuredBikes[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: BikeCard(
-                            bike: bike,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BikeDetailsPage(bikeId: bike.id),
-                                ),
-                              );
-                            },
-                            onWishlistToggle: () {
-                              // TODO: Toggle wishlist
-                            },
-                          ),
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to featured bikes
+              },
+              child: const Text('View All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (featuredBikes.isEmpty)
+          const Center(
+            child: Text('No featured bikes available'),
+          )
+        else
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: featuredBikes.length,
+              itemBuilder: (context, index) {
+                final bike = featuredBikes[index];
+                return Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/bike-details',
+                          arguments: bike.id,
                         );
                       },
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Recently Added Section
-            if (_recentBikes.isNotEmpty) ...[
-              Text(
-                'Recently Added',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 220,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _recentBikes.length,
-                  itemBuilder: (context, index) {
-                    final bike = _recentBikes[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: BikeCard(
-                        bike: bike,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BikeDetailsPage(bikeId: bike.id),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: _buildImageWidget(bike.imageUrl),
                             ),
-                          );
-                        },
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  bike.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  bike.brand,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '₹${bike.price.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: primaryGreen,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: primaryGreen.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'Featured',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: primaryGreen,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
 
-            // Categories Section
+  Widget _buildRecentBikesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
             Text(
-              'Categories',
+              'Recently Added',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.5,
-              ),
-              itemCount: AppConstants.bikeCategories.length,
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to recent bikes
+              },
+              child: const Text('View All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_recentBikes.isEmpty)
+          const Center(
+            child: Text('No recent bikes available'),
+          )
+        else
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _recentBikes.length,
               itemBuilder: (context, index) {
-                return _CategoryCard(
-                  category: AppConstants.bikeCategories[index],
-                  icon: _getCategoryIcon(AppConstants.bikeCategories[index]),
+                final bike = _recentBikes[index];
+                return Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/bike-details',
+                          arguments: bike.id,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(12),
+                              ),
+                              child: _buildImageWidget(bike.imageUrl),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  bike.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  bike.brand,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '₹${bike.price.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                        color: primaryGreen,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'New',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 );
               },
             ),
-          ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildImageWidget(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return Container(
+        color: Colors.grey[200],
+        child: Icon(
+          Icons.motorcycle,
+          color: Colors.grey[400],
+        ),
+      );
+    }
+    
+    // If it's just a filename, construct the backend URL
+    String fullImageUrl = imageUrl;
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
+      fullImageUrl = 'http://localhost:3000/uploads/$imageUrl';
+    }
+    
+    return Image.network(
+      fullImageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: Colors.grey[200],
+        child: Icon(
+          Icons.motorcycle,
+          color: Colors.grey[400],
         ),
       ),
     );
@@ -525,119 +880,18 @@ class _HomeTabState extends State<_HomeTab> {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Sport':
+      case 'Sports':
         return Icons.speed;
-      case 'Cruiser':
-        return Icons.directions_car;
       case 'Adventure':
         return Icons.terrain;
-      case 'Naked':
+      case 'Luxury':
+        return Icons.diamond;
+      case 'Budget':
+        return Icons.attach_money;
+      case 'Cruiser':
         return Icons.motorcycle;
-      case 'Touring':
-        return Icons.map;
       default:
         return Icons.motorcycle;
     }
-  }
-}
-
-
-
-class _CategoryCard extends StatelessWidget {
-  final String category;
-  final IconData icon;
-
-  const _CategoryCard({
-    required this.category,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          // TODO: Navigate to category
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: primaryGreen,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                category,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BikesTab extends StatelessWidget {
-  const _BikesTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Bikes Tab - Coming Soon'),
-      ),
-    );
-  }
-}
-
-class _CartTab extends StatelessWidget {
-  const _CartTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Cart Tab - Coming Soon'),
-      ),
-    );
-  }
-}
-
-class _OrdersTab extends StatelessWidget {
-  const _OrdersTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Orders Tab - Coming Soon'),
-      ),
-    );
-  }
-}
-
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Profile Tab - Coming Soon'),
-      ),
-    );
   }
 } 

@@ -86,27 +86,29 @@ class Bike extends Equatable {
   }
 
   factory Bike.fromJson(Map<String, dynamic> json) {
-    String? imageUrl = json['imageUrl'] ?? json['productImage'];
+    // Map the new backend structure
+    String? imageUrl = json['image'];
     if (imageUrl != null && imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
-      imageUrl = 'http://localhost:5050/uploads/$imageUrl'; // Change to your backend host if needed
+      imageUrl = 'http://localhost:3000/uploads/$imageUrl';
     }
+    
     return Bike(
       id: json['_id'] ?? json['id'] ?? '',
-      name: json['name'] ?? json['model'] ?? '',
-      brand: json['brand'] ?? '',
+      name: json['title'] ?? json['name'] ?? json['model'] ?? 'Unknown Bike',
+      brand: json['brand'] ?? 'Unknown Brand',
       price: (json['price'] is int) ? (json['price'] as int).toDouble() : (json['price'] ?? 0.0),
-      category: json['category'] ?? (json['categoryId']?['name'] ?? ''),
+      category: json['category'] ?? 'Sports',
       imageUrl: imageUrl ?? '',
       description: json['description'] ?? '',
       specifications: BikeSpecifications(
-        engine: json['engine'] ?? '',
-        power: json['power'] ?? '',
-        torque: json['torque'] ?? '',
-        transmission: json['transmission'] ?? '',
-        weight: json['weight'] ?? '',
-        fuelCapacity: json['fuelCapacity'] ?? '',
+        engine: json['cc']?.toString() ?? 'N/A',
+        power: 'N/A', // Not available in new backend
+        torque: 'N/A', // Not available in new backend
+        transmission: json['transmission'] ?? 'Manual',
+        weight: 'N/A', // Not available in new backend
+        fuelCapacity: 'N/A', // Not available in new backend
       ),
-      stock: json['stock'] ?? 0,
+      stock: json['stockAvailable']?.length ?? 0,
       isFeatured: json['isFeatured'] ?? false,
       rating: (json['rating'] is int) ? (json['rating'] as int).toDouble() : (json['rating'] ?? 0.0),
       reviews: [],

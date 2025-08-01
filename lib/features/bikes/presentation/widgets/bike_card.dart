@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class BikeCard extends StatefulWidget {
   final Bike bike;
@@ -59,6 +60,73 @@ class _BikeCardState extends State<BikeCard>
     super.dispose();
   }
 
+  Widget _buildImageWidget() {
+    // Check if the image URL is a network URL or a local asset
+    if (widget.bike.imageUrl.startsWith('http') || widget.bike.imageUrl.startsWith('https')) {
+      // Network image
+      return CachedNetworkImage(
+        imageUrl: widget.bike.imageUrl,
+        height: 180,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          height: 180,
+          width: double.infinity,
+          color: primaryGreen.withOpacity(0.1),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: primaryGreen,
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          height: 180,
+          width: double.infinity,
+          color: primaryGreen.withOpacity(0.1),
+          child: Icon(
+            Icons.motorcycle,
+            size: 60,
+            color: primaryGreen,
+          ),
+        ),
+      );
+    } else {
+      // Local asset or backend file
+      String imageUrl = widget.bike.imageUrl;
+      if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
+        // If it's just a filename, construct the backend URL
+        imageUrl = 'http://localhost:3000/uploads/$imageUrl';
+      }
+      
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        height: 180,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          height: 180,
+          width: double.infinity,
+          color: primaryGreen.withOpacity(0.1),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: primaryGreen,
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          height: 180,
+          width: double.infinity,
+          color: primaryGreen.withOpacity(0.1),
+          child: Icon(
+            Icons.motorcycle,
+            size: 60,
+            color: primaryGreen,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -101,24 +169,7 @@ class _BikeCardState extends State<BikeCard>
                               topLeft: Radius.circular(16),
                               topRight: Radius.circular(16),
                             ),
-                            child: Image.asset(
-                              widget.bike.imageUrl,
-                              height: 180,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  height: 180,
-                                  width: double.infinity,
-                                  color: primaryGreen.withOpacity(0.1),
-                                  child: Icon(
-                                    Icons.motorcycle,
-                                    size: 60,
-                                    color: primaryGreen,
-                                  ),
-                                );
-                              },
-                            ),
+                            child: _buildImageWidget(),
                           ),
                           // Wishlist button
                           if (widget.onWishlistToggle != null)

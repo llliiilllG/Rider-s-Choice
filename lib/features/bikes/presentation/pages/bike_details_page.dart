@@ -12,6 +12,10 @@ import '../widgets/bike_card.dart';
 import '../../../../core/services/bike_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/services/order_api_service.dart';
+import '../../../../core/services/cart_service.dart';
+import '../../../../core/services/payment_service.dart';
+import '../../../../core/widgets/payment_options_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class BikeDetailsPage extends StatefulWidget {
   final String bikeId;
@@ -35,6 +39,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   late WebSocketService _webSocketService;
   late PaymentService _paymentService;
   late ConnectivityService _connectivityService;
+  final CartService _cartService = CartService();
 
   bool _isInWishlist = false;
   int _quantity = 1;
@@ -100,6 +105,46 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
     }
   }
 
+  Widget _buildBikeImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return Container(
+        color: primaryGreen.withOpacity(0.1),
+        child: Icon(
+          Icons.motorcycle,
+          size: 100,
+          color: primaryGreen,
+        ),
+      );
+    }
+    
+    // If it's just a filename, construct the backend URL
+    String fullImageUrl = imageUrl;
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('assets/')) {
+      fullImageUrl = 'http://localhost:3000/uploads/$imageUrl';
+    }
+    
+    return CachedNetworkImage(
+      imageUrl: fullImageUrl,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: primaryGreen.withOpacity(0.1),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: primaryGreen,
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: primaryGreen.withOpacity(0.1),
+        child: Icon(
+          Icons.motorcycle,
+          size: 100,
+          color: primaryGreen,
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -133,20 +178,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(
-                      bike.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: primaryGreen.withOpacity(0.1),
-                          child: Icon(
-                            Icons.motorcycle,
-                            size: 100,
-                            color: primaryGreen,
-                          ),
-                        );
-                      },
-                    ),
+                    _buildBikeImage(bike.imageUrl),
                     // Gradient overlay
                     Container(
                       decoration: BoxDecoration(
@@ -746,25 +778,25 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
 
   Future<String> _getUserId() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('userId') ?? '';
+    String userId = prefs.getString('userId') ?? '';
+    
+    // If no user is logged in, use a demo user ID for testing
+    if (userId.isEmpty) {
+      userId = 'demo_user_${DateTime.now().millisecondsSinceEpoch}';
+      await prefs.setString('userId', userId);
+    }
+    
     return userId;
   }
 
   void _addToCart() async {
     setState(() => _isLoading = true);
     try {
-      final userId = await _getUserId();
-      if (userId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to add items to cart')),
-        );
-        return;
-      }
-      await getIt<BikeApiService>().addToCart(userId, _bike!.id, _quantity);
+      await _cartService.addToCart(_bike!, _quantity);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Added to cart successfully!')),
       );
-      Navigator.pushReplacementNamed(context, '/cart');
+      Navigator.pushNamed(context, '/cart');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add to cart: $e')),
@@ -775,27 +807,34 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   }
 
   void _buyNow() async {
-    setState(() => _isLoading = true);
-    try {
-      final userId = await _getUserId();
-      if (userId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to place orders')),
-        );
-        return;
-      }
-      await getIt<OrderApiService>().createOrderForBike(userId, _bike!, _quantity);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order placed successfully!')),
-      );
-      Navigator.pushReplacementNamed(context, '/orders');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to place order: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+    if (_bike == null) return;
+    
+    // Create a single cart item for buy now
+    final cartItem = CartItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      bikeId: _bike!.id,
+      bikeName: _bike!.name,
+      bikeBrand: _bike!.brand,
+      price: _bike!.price,
+      imageUrl: _bike!.imageUrl,
+      quantity: _quantity,
+      addedAt: DateTime.now(),
+    );
+    
+    // Show payment options
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => PaymentOptionsSheet(
+        cartItems: [cartItem],
+        totalAmount: _bike!.price * _quantity,
+        onPaymentComplete: () {
+          Navigator.pop(context);
+          Navigator.pop(context); // Go back to previous screen
+        },
+      ),
+    );
   }
 
   String _formatDate(DateTime date) {

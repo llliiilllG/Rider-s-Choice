@@ -5,11 +5,11 @@ class BikeApiService {
   final Dio _dio;
   final String baseUrl;
 
-  BikeApiService({Dio? dio, this.baseUrl = 'http://localhost:5050/api'}) : _dio = dio ?? Dio();
+  BikeApiService({Dio? dio, this.baseUrl = 'http://localhost:3000/api/v1'}) : _dio = dio ?? Dio();
 
   Future<List<Bike>> getAllBikes() async {
-    final response = await _dio.get('$baseUrl/products');
-    final data = response.data['data'] as List;
+    final response = await _dio.get('$baseUrl/package');
+    final data = response.data as List;
     return data.map((json) => Bike.fromJson(json)).toList();
   }
 
@@ -20,63 +20,42 @@ class BikeApiService {
   }
 
   Future<Bike?> getBikeById(String id) async {
-    final response = await _dio.get('$baseUrl/products');
-    final data = response.data['data'] as List;
-    final bikeJson = data.firstWhere((json) => json['_id'] == id, orElse: () => null);
-    if (bikeJson == null) return null;
-    return Bike.fromJson(bikeJson);
+    final response = await _dio.get('$baseUrl/package/$id');
+    return Bike.fromJson(response.data);
   }
 
   Future<List<Bike>> getBikesByCategory(String category) async {
-    final response = await _dio.get('$baseUrl/products', queryParameters: {'category': category});
-    final data = response.data['data'] as List;
+    final response = await _dio.get('$baseUrl/package', queryParameters: {'category': category});
+    final data = response.data as List;
     return data.map((json) => Bike.fromJson(json)).toList();
   }
 
   Future<List<Bike>> getRecentlyAddedBikes() async {
-    final response = await _dio.get('$baseUrl/products', queryParameters: {'recent': true});
-    final data = response.data['data'] as List;
-    return data.map((json) => Bike.fromJson(json)).toList();
+    final response = await _dio.get('$baseUrl/package');
+    final data = response.data as List;
+    // Sort by createdAt to get recently added bikes
+    data.sort((a, b) => DateTime.parse(b['createdAt']).compareTo(DateTime.parse(a['createdAt'])));
+    return data.take(5).map((json) => Bike.fromJson(json)).toList();
   }
 
+  // TODO: Implement cart functionality when backend supports it
   Future<void> addToCart(String userId, String productId, int quantity) async {
-    await _dio.post(
-      '$baseUrl/cart/$userId/add',
-      data: {
-        'productId': productId,
-        'quantity': quantity,
-      },
-    );
+    // Cart functionality not yet implemented in new backend
+    throw UnimplementedError('Cart functionality not yet available');
   }
 
   Future<List<Map<String, dynamic>>> getCart(String userId) async {
-    final response = await _dio.get('$baseUrl/cart/$userId');
-    final data = response.data;
-    if (data == null || data['products'] == null) return [];
-    
-    final products = data['products'] as List;
-    return products.map((product) {
-      final productData = product['productId'] is Map ? product['productId'] : {};
-      return {
-        'productId': product['productId'] is String ? product['productId'] : productData['_id'] ?? '',
-        'name': productData['model'] ?? productData['name'] ?? 'Unknown Product',
-        'price': product['price'] ?? 0.0,
-        'quantity': product['quantity'] ?? 1,
-        'imageUrl': productData['productImage'] ?? '',
-      };
-    }).toList();
+    // Cart functionality not yet implemented in new backend
+    return [];
   }
 
   Future<void> removeFromCart(String userId, String productId) async {
-    await _dio.post(
-      '$baseUrl/cart/$userId/remove',
-      data: {
-        'productId': productId,
-      },
-    );
+    // Cart functionality not yet implemented in new backend
+    throw UnimplementedError('Cart functionality not yet available');
   }
 
   Future<void> clearCart(String userId) async {
-    await _dio.post('$baseUrl/cart/$userId/clear');
+    // Cart functionality not yet implemented in new backend
+    throw UnimplementedError('Cart functionality not yet available');
   }
 } 

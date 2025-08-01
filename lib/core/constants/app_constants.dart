@@ -1,15 +1,15 @@
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'http://localhost:5000/api';
-  static const String wsUrl = 'ws://localhost:5000';
+  static const String baseUrl = 'http://localhost:3000/api/v1';
+  static const String wsUrl = 'ws://localhost:3000';
   
   // API Endpoints
   static const String authEndpoint = '/auth';
-  static const String bikesEndpoint = '/bikes';
-  static const String ordersEndpoint = '/orders';
-  static const String usersEndpoint = '/users';
+  static const String bikesEndpoint = '/package';
+  static const String ordersEndpoint = '/bookings';
+  static const String usersEndpoint = '/auth';
   static const String sensorsEndpoint = '/sensors';
-  static const String paymentsEndpoint = '/payments';
+  static const String paymentsEndpoint = '/khalti';
   
   // Storage Keys
   static const String tokenKey = 'auth_token';
@@ -56,11 +56,11 @@ class AppConstants {
   
   // Bike Categories
   static const List<String> bikeCategories = [
-    'Sport',
-    'Cruiser',
     'Adventure',
-    'Naked',
-    'Touring'
+    'Luxury',
+    'Budget',
+    'Sports',
+    'Cruiser'
   ];
   
   // Order Status

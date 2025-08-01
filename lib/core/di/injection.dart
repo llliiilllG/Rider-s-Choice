@@ -47,7 +47,7 @@ Future<void> configureDependencies() async {
   // Register other services
   getIt.registerLazySingleton<SensorService>(() => SensorService());
   getIt.registerLazySingleton<WebSocketService>(() => WebSocketService(getIt<LocalStorage>()));
-  getIt.registerLazySingleton<PaymentService>(() => PaymentService(getIt<ApiClient>(), getIt<LocalStorage>()));
+  getIt.registerLazySingleton<PaymentService>(() => PaymentService());
   getIt.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
 
   // Register use cases

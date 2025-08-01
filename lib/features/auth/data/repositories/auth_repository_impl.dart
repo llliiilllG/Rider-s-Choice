@@ -24,6 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _localStorage.setString('token', token);
       await _localStorage.setString('user', response['user'].toString());
+      await _localStorage.setString('userId', user.id); // Save user ID specifically
 
       return user;
     } catch (e) {
@@ -45,6 +46,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _localStorage.setString('token', token);
       await _localStorage.setString('user', response['user'].toString());
+      await _localStorage.setString('userId', user.id); // Save user ID specifically
 
       return user;
     } catch (e) {
@@ -76,6 +78,7 @@ class AuthRepositoryImpl implements AuthRepository {
     } finally {
       await _localStorage.removeString('token');
       await _localStorage.removeString('user');
+      await _localStorage.removeString('userId');
     }
   }
 

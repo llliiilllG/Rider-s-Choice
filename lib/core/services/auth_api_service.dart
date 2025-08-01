@@ -2,8 +2,7 @@ import 'package:dio/dio.dart';
 
 class AuthApiService {
   final Dio _dio;
-  // final String baseUrl = 'http://localhost:5050/api';
-  final String baseUrl = 'http://127.0.0.1:5050/api';
+  final String baseUrl = 'http://localhost:3000/api/v1';
 
   AuthApiService({Dio? dio}) : _dio = dio ?? Dio();
 
@@ -39,11 +38,12 @@ class AuthApiService {
     }
   }
 
-  Future<Map<String, dynamic>> signup(String email, String password) async {
+  Future<Map<String, dynamic>> signup(String email, String password, {String? name}) async {
     try {
-      final response = await _dio.post('$baseUrl/auth/signup', data: {
+      final response = await _dio.post('$baseUrl/auth/register', data: {
         'email': email,
         'password': password,
+        'name': name ?? 'User',
       });
       return response.data as Map<String, dynamic>;
     } catch (e) {
@@ -57,7 +57,7 @@ class AuthApiService {
         'user': {
           'id': '1',
           'email': email,
-          'name': 'Demo User',
+          'name': name ?? 'Demo User',
         }
       };
     }
