@@ -9,8 +9,10 @@ import 'features/bikes/presentation/pages/splash_screen.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/bikes/presentation/pages/home_page.dart';
+import 'features/bikes/presentation/pages/bike_details_page.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/orders/presentation/pages/orders_page.dart';
+import 'features/wishlist/presentation/pages/wishlist_page.dart';
 import 'presentation/bloc/bike/bike_bloc.dart';
 import 'core/services/bike_api_service.dart';
 import 'core/services/accessory_api_service.dart';
@@ -64,8 +66,13 @@ class MyApp extends StatelessWidget {
           '/login': (context) => LoginPage(),
           '/signup': (context) => SignupPage(),
           '/home': (context) => HomePage(),
+          '/bike-details': (context) {
+            final bikeId = ModalRoute.of(context)!.settings.arguments as String;
+            return BikeDetailsPage(bikeId: bikeId);
+          },
           '/cart': (context) => CartPage(),
           '/orders': (context) => OrdersPage(),
+          '/wishlist': (context) => const WishlistPage(),
         },
       ),
     );

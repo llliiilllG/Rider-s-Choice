@@ -13,6 +13,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../cart/presentation/pages/cart_page.dart';
 import '../../../orders/presentation/pages/orders_page.dart';
 import '../../../profile/presentation/pages/profile_page.dart';
+import '../../../wishlist/presentation/pages/wishlist_page.dart';
+import '../../../../core/services/cart_service.dart';
+import '../../../../core/services/wishlist_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -23,6 +26,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  final CartService _cartService = CartService();
+  int _cartItemCount = 0;
 
   Widget _buildImageWidget(String imageUrl) {
     if (imageUrl.isEmpty) {
@@ -46,6 +51,26 @@ class _HomePageState extends State<HomePage> {
       ),
       errorWidget: (context, url, error) => const Icon(Icons.motorcycle, size: 64, color: Colors.grey),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCartCount();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh cart count when dependencies change (e.g., when returning from cart)
+    _loadCartCount();
+  }
+
+  Future<void> _loadCartCount() async {
+    final count = await _cartService.getCartItemCount();
+    setState(() {
+      _cartItemCount = count;
+    });
   }
 
   @override
@@ -229,43 +254,109 @@ class _HomePageState extends State<HomePage> {
             ),
           ), 
           // Cart Tab
-          const CartPage(), 
+          CartPage(onCartUpdated: _loadCartCount), 
           // Orders Tab
-          const OrdersPage(), 
+          OrdersPage(), 
           // Profile Tab
           const ProfilePage(), 
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
+        onTap: (index) async {
           setState(() {
             _currentIndex = index;
           });
+          // Refresh cart count when navigating to cart tab
+          if (index == 2) {
+            await _loadCartCount();
+          }
+          // Refresh orders when navigating to orders tab
+          if (index == 3) {
+            // The OrdersPage will refresh itself when it becomes visible
+          }
         },
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.motorcycle_outlined),
             activeIcon: Icon(Icons.motorcycle),
             label: 'Bikes',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart),
+            icon: Stack(
+              children: [
+                const Icon(Icons.shopping_cart_outlined),
+                if (_cartItemCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$_cartItemCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            activeIcon: Stack(
+              children: [
+                const Icon(Icons.shopping_cart),
+                if (_cartItemCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$_cartItemCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             label: 'Cart',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.receipt_outlined),
             activeIcon: Icon(Icons.receipt),
             label: 'Orders',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
@@ -285,8 +376,10 @@ class _HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<_HomeTab> {
   late BikesViewModel _bikesViewModel;
+  final WishlistService _wishlistService = WishlistService();
   List<Bike> _recentBikes = [];
   List<Bike> _featuredBikes = [];
+  int _wishlistCount = 0;
 
   @override
   void initState() {
@@ -298,6 +391,7 @@ class _HomeTabState extends State<_HomeTab> {
   Future<void> _loadData() async {
     await _bikesViewModel.loadFeaturedBikes();
     await _loadRecentBikes();
+    await _loadWishlistCount();
   }
 
   Future<void> _loadRecentBikes() async {
@@ -306,6 +400,17 @@ class _HomeTabState extends State<_HomeTab> {
     setState(() {
       _recentBikes = recent;
     });
+  }
+
+  Future<void> _loadWishlistCount() async {
+    try {
+      final count = await _wishlistService.getWishlistCount();
+      setState(() {
+        _wishlistCount = count;
+      });
+    } catch (e) {
+      print('Error loading wishlist count: $e');
+    }
   }
 
   @override
@@ -445,34 +550,41 @@ class _HomeTabState extends State<_HomeTab> {
   }
 
   Widget _buildQuickStats() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.motorcycle,
-            title: 'Total Bikes',
-            value: '${_bikesViewModel.bikes.length}',
-            color: primaryGreen,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.motorcycle,
+                title: 'Total Bikes',
+                value: '${_bikesViewModel.bikes.length}',
+                color: primaryGreen,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.category,
+                title: 'Categories',
+                value: '${AppConstants.bikeCategories.length}',
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.star,
+                title: 'Featured',
+                value: '${_bikesViewModel.bikes.where((b) => b.isFeatured).length}',
+                color: Colors.purple,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.category,
-            title: 'Categories',
-            value: '${AppConstants.bikeCategories.length}',
-            color: Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            icon: Icons.star,
-            title: 'Featured',
-            value: '${_bikesViewModel.bikes.where((b) => b.isFeatured).length}',
-            color: Colors.purple,
-          ),
-        ),
+        const SizedBox(height: 12),
+        // Wishlist card - full width
+        _buildWishlistCard(),
       ],
     );
   }
@@ -509,6 +621,54 @@ class _HomeTabState extends State<_HomeTab> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWishlistCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const WishlistPage()),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Icon(Icons.favorite, color: Colors.red, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$_wishlistCount',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  Text(
+                    'Wishlist Items',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: Colors.red, size: 16),
+          ],
+        ),
       ),
     );
   }

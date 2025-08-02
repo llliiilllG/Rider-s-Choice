@@ -169,4 +169,30 @@ class CartService {
     }
     return total;
   }
+
+  // Add sample data for testing (remove this in production)
+  Future<void> addSampleData() async {
+    final sampleBike = Bike(
+      id: 'sample_bike_1',
+      name: 'Sample Bike',
+      brand: 'Test Brand',
+      price: 250000.0,
+      category: 'Sports',
+      imageUrl: '',
+      description: 'A sample bike for testing',
+      specifications: const BikeSpecifications(
+        engine: '1000cc',
+        power: '150 HP',
+        torque: '100 Nm',
+        transmission: 'Manual',
+        weight: '200 kg',
+        fuelCapacity: '15L',
+      ),
+      stock: 5,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    
+    await addToCart(sampleBike, 1);
+  }
 } 

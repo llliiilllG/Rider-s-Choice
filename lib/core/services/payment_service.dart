@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../features/bikes/domain/entities/bike.dart';
 import 'cart_service.dart';
+import 'order_api_service.dart';
 
 enum PaymentMethod {
   cashOnDelivery,
@@ -9,6 +10,7 @@ enum PaymentMethod {
 
 class PaymentService {
   final CartService _cartService = CartService();
+  final OrderApiService _orderApiService = OrderApiService();
 
   // Process payment
   Future<PaymentResult> processPayment({
@@ -51,20 +53,32 @@ class PaymentService {
     String? deliveryAddress,
     String? phoneNumber,
   }) async {
-    // Simulate processing time
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Generate order ID
-    final orderId = 'COD_${DateTime.now().millisecondsSinceEpoch}';
-    
-    // Clear cart after successful order
-    await _cartService.clearCart();
-    
-    return PaymentResult(
-      success: true,
-      message: 'Order placed successfully! Pay ₹${totalAmount.toStringAsFixed(2)} on delivery.',
-      orderId: orderId,
-    );
+    try {
+      // Create orders in backend for each cart item
+      final cartItemsData = items.map((item) => {
+        'bikeId': item.bikeId,
+        'bikeName': item.bikeName,
+        'quantity': item.quantity,
+        'price': item.price,
+      }).toList();
+      
+      await _orderApiService.createOrderFromCart('', cartItemsData, totalAmount);
+      
+      // Clear cart after successful order
+      await _cartService.clearCart();
+      
+      return PaymentResult(
+        success: true,
+        message: 'Order placed successfully! Pay ₹${totalAmount.toStringAsFixed(2)} on delivery.',
+        orderId: 'COD_${DateTime.now().millisecondsSinceEpoch}',
+      );
+    } catch (e) {
+      return PaymentResult(
+        success: false,
+        message: 'Failed to create order: ${e.toString()}',
+        orderId: null,
+      );
+    }
   }
 
   // Process Khalti Payment
@@ -74,20 +88,32 @@ class PaymentService {
     String? deliveryAddress,
     String? phoneNumber,
   }) async {
-    // Simulate Khalti payment processing
-    await Future.delayed(const Duration(seconds: 3));
-    
-    // Generate order ID
-    final orderId = 'Khalti_${DateTime.now().millisecondsSinceEpoch}';
-    
-    // Clear cart after successful payment
-    await _cartService.clearCart();
-    
-    return PaymentResult(
-      success: true,
-      message: 'Payment successful! Order ID: $orderId',
-      orderId: orderId,
-    );
+    try {
+      // Create orders in backend for each cart item
+      final cartItemsData = items.map((item) => {
+        'bikeId': item.bikeId,
+        'bikeName': item.bikeName,
+        'quantity': item.quantity,
+        'price': item.price,
+      }).toList();
+      
+      await _orderApiService.createOrderFromCart('', cartItemsData, totalAmount);
+      
+      // Clear cart after successful payment
+      await _cartService.clearCart();
+      
+      return PaymentResult(
+        success: true,
+        message: 'Payment successful! Order ID: Khalti_${DateTime.now().millisecondsSinceEpoch}',
+        orderId: 'Khalti_${DateTime.now().millisecondsSinceEpoch}',
+      );
+    } catch (e) {
+      return PaymentResult(
+        success: false,
+        message: 'Failed to create order: ${e.toString()}',
+        orderId: null,
+      );
+    }
   }
 
   // Get payment methods

@@ -21,6 +21,13 @@ class _OrdersPageState extends State<OrdersPage> {
     _loadOrders();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh orders when the page becomes visible
+    _loadOrders();
+  }
+
   Future<void> _loadOrders() async {
     try {
       final api = OrderApiService();
@@ -28,12 +35,96 @@ class _OrdersPageState extends State<OrdersPage> {
       setState(() {
         orders = ordersData;
         _isLoading = false;
+        _errorMessage = null;
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load orders: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _cancelOrder(String orderId) async {
+    try {
+      final api = OrderApiService();
+      final success = await api.cancelOrder(orderId);
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order cancelled successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadOrders(); // Refresh the orders list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to cancel order'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error cancelling order: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _createSampleOrder() async {
+    try {
+      final api = OrderApiService();
+      // Create a sample bike for testing
+      final sampleBike = {
+        'id': 'sample_bike_1',
+        'name': 'Sample Bike',
+        'price': 250000.0,
+      };
+      
+      await api.createOrderForBike('', sampleBike, 1);
+      await _loadOrders(); // Refresh the orders list
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sample order created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create sample order: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _resetUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('userId');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User ID reset. New orders will be created with a fresh user ID.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      
+      await _loadOrders(); // Refresh to show empty state
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error resetting user ID: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -62,22 +153,43 @@ class _OrdersPageState extends State<OrdersPage> {
                   ),
                 )
               : orders.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
-                          SizedBox(height: 8),
-                          Text('Your orders will appear here', style: TextStyle(color: Colors.grey)),
+                          const Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text('No orders yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                          const SizedBox(height: 8),
+                          const Text('Your orders will appear here', style: TextStyle(color: Colors.grey)),
+                          const SizedBox(height: 24),
+                          // Temporary buttons for testing - remove in production
+                          ElevatedButton(
+                            onPressed: _createSampleOrder,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Create Sample Order (Testing)'),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _resetUserId,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Reset User ID (Testing)'),
+                          ),
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: orders.length,
-                      itemBuilder: (context, index) {
+                  : RefreshIndicator(
+                      onRefresh: _loadOrders,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: orders.length,
+                        itemBuilder: (context, index) {
                         final order = orders[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -118,30 +230,26 @@ class _OrdersPageState extends State<OrdersPage> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Date: ${_formatDate(order['date'])}',
+                                  'Date: ${_formatDate(order['createdAt'])}',
                                   style: TextStyle(color: Colors.grey[600]),
                                 ),
                                 const SizedBox(height: 8),
-                                if (order['products'] != null) ...[
-                                  ...(order['products'] as List).map((product) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${product['name']} x${product['quantity']}',
-                                            style: const TextStyle(fontWeight: FontWeight.w500),
-                                          ),
-                                        ),
-                                        Text(
-                                          '\$${(product['price'] ?? 0).toStringAsFixed(2)}',
-                                          style: const TextStyle(fontWeight: FontWeight.w500),
-                                        ),
-                                      ],
+                                // Display bike information
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${order['packageName']} x${order['quantity']}',
+                                        style: const TextStyle(fontWeight: FontWeight.w500),
+                                      ),
                                     ),
-                                  )),
-                                ],
+                                    Text(
+                                      '₹${(order['totalAmount'] ?? 0).toStringAsFixed(2)}',
+                                      style: const TextStyle(fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                ),
                                 const Divider(height: 16),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -154,7 +262,7 @@ class _OrdersPageState extends State<OrdersPage> {
                                       ),
                                     ),
                                     Text(
-                                      '\$${(order['total'] ?? 0).toStringAsFixed(2)}',
+                                      '₹${(order['totalAmount'] ?? 0).toStringAsFixed(2)}',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -163,12 +271,36 @@ class _OrdersPageState extends State<OrdersPage> {
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 12),
+                                // Cancel button (only for pending orders)
+                                if (order['status']?.toString().toLowerCase() == 'pending')
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () => _cancelOrder(order['_id']),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Cancel Order',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
                         );
                       },
                     ),
+                  ),
     );
   }
 

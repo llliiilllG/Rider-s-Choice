@@ -4,8 +4,9 @@ const Package = require("../models/Package");
 // Add package to wishlist
 exports.addToWishlist = async (req, res) => {
     try {
-        const { packageId } = req.body;
-        const customerId = req.user.id; // Assuming authentication middleware sets req.user
+        const { packageId, customerId } = req.body;
+        // For demo purposes, use customerId from body instead of req.user.id
+        const userId = customerId || req.user?.id;
 
         // Check if the package exists
         const packageExists = await Package.findById(packageId);
@@ -14,9 +15,9 @@ exports.addToWishlist = async (req, res) => {
         }
 
         // Find or create wishlist for the customer
-        let wishlist = await Wishlist.findOne({ customer: customerId });
+        let wishlist = await Wishlist.findOne({ customer: userId });
         if (!wishlist) {
-            wishlist = new Wishlist({ customer: customerId, packages: [] });
+            wishlist = new Wishlist({ customer: userId, packages: [] });
         }
 
         // Check if the package is already in the wishlist
@@ -46,12 +47,13 @@ exports.addToWishlist = async (req, res) => {
 // Remove package from wishlist
 exports.removeFromWishlist = async (req, res) => {
     try {
-        const { packageId } = req.params;  // Use body instead of params
-        const customerId = req.user.id;
+        const { packageId } = req.params;
+        // For demo purposes, use a default user ID since we don't have authentication
+        const userId = 'demo_user_12345'; // Use the same ID as frontend
 
-        console.log("Customer ID:", customerId); // Debugging log
+        console.log("Customer ID:", userId); // Debugging log
 
-        const wishlist = await Wishlist.findOne({ customer: customerId });
+        const wishlist = await Wishlist.findOne({ customer: userId });
         if (!wishlist) {
             return res.status(404).json({ success: false, message: "Wishlist not found" });
         }
@@ -65,7 +67,7 @@ exports.removeFromWishlist = async (req, res) => {
         await wishlist.save();
 
         // Fetch updated wishlist with populated packages
-        const updatedWishlist = await Wishlist.findOne({ customer: customerId }).populate("packages");
+        const updatedWishlist = await Wishlist.findOne({ customer: userId }).populate("packages");
 
         // Return updated wishlist count
         res.status(200).json({
@@ -82,7 +84,9 @@ exports.removeFromWishlist = async (req, res) => {
 
 exports.getWishlistCount = async (req, res) => {
   try {
-    const wishlist = await Wishlist.findOne({ user: req.user.id });
+    // For demo purposes, use a default user ID
+    const userId = 'demo_user_12345';
+    const wishlist = await Wishlist.findOne({ customer: userId });
 
     if (!wishlist) {
       return res.status(200).json({ success: true, count: 0 });
@@ -98,8 +102,9 @@ exports.getWishlistCount = async (req, res) => {
 // Get wishlist of a customer
 exports.getWishlist = async (req, res) => {
     try {
-        const customerId = req.user.id;
-        const wishlist = await Wishlist.findOne({ customer: customerId }).populate("packages");
+        // For demo purposes, use a default user ID
+        const userId = 'demo_user_12345';
+        const wishlist = await Wishlist.findOne({ customer: userId }).populate("packages");
 
         if (!wishlist) {
             return res.status(404).json({ success: false, message: "Wishlist not found" });
@@ -113,7 +118,8 @@ exports.getWishlist = async (req, res) => {
 
 exports.deleteWishlistItem = async (req, res) => {
     try {
-      const userId = req.user.id; // Get user ID from `protect` middleware
+      // For demo purposes, use a default user ID
+      const userId = 'demo_user_12345';
       const packageId = req.params.packageId;
   
       // Find the user's wishlist

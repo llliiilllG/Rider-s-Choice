@@ -6,6 +6,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/services/sensor_service.dart';
 import '../../../../core/services/websocket_service.dart';
 import '../../../../core/services/payment_service.dart';
+import '../../../../core/services/wishlist_service.dart';
 import '../../../../core/services/connectivity_service.dart';
 import 'package:riders_choice/features/bikes/domain/entities/bike.dart';
 import '../widgets/bike_card.dart';
@@ -40,6 +41,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
   late PaymentService _paymentService;
   late ConnectivityService _connectivityService;
   final CartService _cartService = CartService();
+  final WishlistService _wishlistService = WishlistService();
 
   bool _isInWishlist = false;
   int _quantity = 1;
@@ -60,6 +62,15 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
     _webSocketService = getIt<WebSocketService>();
     _paymentService = getIt<PaymentService>();
     _connectivityService = getIt<ConnectivityService>();
+  }
+
+  Future<void> _checkWishlistStatus() async {
+    if (_bike != null) {
+      final isInWishlist = await _wishlistService.isInWishlist(_bike!.id);
+      setState(() {
+        _isInWishlist = isInWishlist;
+      });
+    }
   }
 
   void _setupAnimations() {
@@ -96,6 +107,7 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
       _animationController.forward();
       if (bike != null) {
         _webSocketService.sendBikeView(bike.id);
+        await _checkWishlistStatus(); // Check if bike is in wishlist
       }
     } catch (e) {
       setState(() {
@@ -746,11 +758,44 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
     );
   }
 
-  void _toggleWishlist() {
-    setState(() {
-      _isInWishlist = !_isInWishlist;
-    });
-    _webSocketService.sendWishlistToggle(_bike!.id, _isInWishlist);
+  void _toggleWishlist() async {
+    if (_bike == null) return;
+    
+    try {
+      bool success;
+      if (_isInWishlist) {
+        success = await _wishlistService.removeFromWishlist(_bike!.id);
+      } else {
+        success = await _wishlistService.addToWishlist(_bike!.id);
+      }
+      
+      if (success) {
+        setState(() {
+          _isInWishlist = !_isInWishlist;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isInWishlist ? 'Added to wishlist!' : 'Removed from wishlist!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update wishlist'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _shareBike() {
@@ -832,6 +877,8 @@ class _BikeDetailsPageState extends State<BikeDetailsPage>
         onPaymentComplete: () {
           Navigator.pop(context);
           Navigator.pop(context); // Go back to previous screen
+          // Refresh orders page if it's open
+          Navigator.pushNamed(context, '/orders');
         },
       ),
     );

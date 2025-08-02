@@ -75,8 +75,48 @@ const getBookingsByUserId = async (req, res) => {
   }
 };
 
+// Create booking for bike purchase
+const createBikeBooking = async (req, res) => {
+  try {
+    const {
+      userId,
+      packageId,
+      packageName,
+      quantity,
+      totalAmount,
+      fullName,
+      email,
+      phone,
+      paymentMethod
+    } = req.body;
+
+    const newBooking = new Booking({
+      userId,
+      packageId,
+      packageName,
+      quantity,
+      totalAmount,
+      fullName,
+      email,
+      phone,
+      paymentMethod,
+      status: 'pending'
+    });
+
+    const savedBooking = await newBooking.save();
+    res.status(201).json({ 
+      message: "Booking successful!", 
+      booking: savedBooking 
+    });
+  } catch (error) {
+    console.error('Booking creation error:', error);
+    res.status(500).json({ error: "Failed to create booking" });
+  }
+};
+
 module.exports = {
   createBooking,
+  createBikeBooking,
   getAllBookings,
   getBookingById,
   cancelBooking,

@@ -5,7 +5,9 @@ import '../../../../core/services/payment_service.dart';
 import '../../../../core/widgets/payment_options_sheet.dart';
 
 class CartPage extends StatefulWidget {
-  const CartPage({Key? key}) : super(key: key);
+  final VoidCallback? onCartUpdated;
+  
+  const CartPage({Key? key, this.onCartUpdated}) : super(key: key);
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -46,16 +48,19 @@ class _CartPageState extends State<CartPage> {
   Future<void> _updateQuantity(String itemId, int quantity) async {
     await _cartService.updateQuantity(itemId, quantity);
     await _loadCart();
+    widget.onCartUpdated?.call();
   }
 
   Future<void> _removeItem(String itemId) async {
     await _cartService.removeFromCart(itemId);
     await _loadCart();
+    widget.onCartUpdated?.call();
   }
 
   Future<void> _clearCart() async {
     await _cartService.clearCart();
     await _loadCart();
+    widget.onCartUpdated?.call();
   }
 
   void _showPaymentOptions() {
@@ -128,6 +133,20 @@ class _CartPageState extends State<CartPage> {
               foregroundColor: Colors.white,
             ),
             child: const Text('Continue Shopping'),
+          ),
+          const SizedBox(height: 16),
+          // Temporary button for testing - remove in production
+          ElevatedButton(
+            onPressed: () async {
+              await _cartService.addSampleData();
+              await _loadCart();
+              widget.onCartUpdated?.call();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Add Sample Data (Testing)'),
           ),
         ],
       ),
